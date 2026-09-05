@@ -1,0 +1,8 @@
+{
+  "name": "PyVM Obfuscator & Native Rust Virtualizer",
+  "description": "Enterprise-grade Python code virtualizer with Native Rust Virtual Machine, custom VM instructions, opcode remapping, randomized entropy byte stream, and Python 3.7-3.14 support.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
