@@ -63,6 +63,14 @@ export interface ObfuscationConfig {
   variableNameObfuscation: boolean;
   deadCodeInjection: boolean;
 
+  // Obfuscation Intensity & Ultra-Stealth Parameters
+  intensityLevel?: 'standard' | 'high' | 'maximum' | 'jumbo_extreme';
+  hideImports?: boolean;                   // Zero 'import' statements (ultra-stealth dynamic reflection loader)
+  largeBytesPayload?: boolean;             // High-volume jumbo byte stream with cryptographic padding
+  opcodeRemapping?: boolean;               // Dynamic remapping of VM opcodes
+  controlFlowFlattening?: boolean;         // Aegis 8-state algebraic switch dispatcher
+  entropyRandomization?: boolean;          // High-entropy bitwise scattering & PRNG junk injection
+
   // 15 Hardened Enterprise Modules:
   // Group 1: Machine-Level Native Engine (Rust Virtual Machine Engine)
   nativeRustVirtualization: boolean;       // 01. Native Rust Virtualization (Embive / Aegis / RustPython)

@@ -1,4 +1,4 @@
-import { PresetProfile } from '@/lib/types';
+import { PresetProfile } from '../../lib/types';
 
 export const PRESET_PROFILES: PresetProfile[] = [
   {

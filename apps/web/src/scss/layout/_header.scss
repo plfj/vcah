@@ -1,0 +1,14 @@
+@use '../abstracts/tokens' as *;
+@use '../abstracts/mixins' as *;
+
+.l-header {
+  height: 64px;
+  background-color: $color-bg-surface;
+  border-bottom: 1px solid $color-border-subtle;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  @include flex-between;
+  padding-left: $space-6;
+  padding-right: $space-6;
+}

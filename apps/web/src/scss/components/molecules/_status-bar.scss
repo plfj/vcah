@@ -1,0 +1,48 @@
+@use '../../abstracts/tokens' as *;
+@use '../../abstracts/mixins' as *;
+
+.m-status-bar {
+  height: 38px;
+  background: rgba(18, 18, 20, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-left: $space-6;
+  padding-right: $space-6;
+  @include flex-between;
+  font-size: 0.75rem;
+  letter-spacing: -0.01em;
+  color: $color-text-secondary;
+
+  &__group {
+    display: flex;
+    align-items: center;
+    gap: $space-5;
+  }
+
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: $space-2;
+  }
+
+  &__dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background-color: $color-accent-emerald;
+    box-shadow: 0 0 8px rgba(48, 209, 88, 0.6);
+    animation: apple-status-pulse 2.2s infinite ease-in-out;
+  }
+}
+
+@keyframes apple-status-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.85);
+  }
+}

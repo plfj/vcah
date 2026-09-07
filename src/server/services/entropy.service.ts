@@ -1,4 +1,4 @@
-import { EntropyLevel } from '@/lib/types';
+import { EntropyLevel } from '../../../lib/types';
 
 export class EntropyService {
   /**

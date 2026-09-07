@@ -1,0 +1,35 @@
+@use '../../abstracts/tokens' as *;
+
+.a-metric-pill {
+  display: flex;
+  flex-direction: column;
+  gap: $space-1;
+  padding: 0.875rem 1rem;
+  background: rgba(28, 28, 30, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: $radius-lg;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  transition: border-color $transition-normal, transform $transition-spring;
+
+  &:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+  }
+
+  &__label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: $color-text-secondary;
+    letter-spacing: -0.01em;
+  }
+
+  &__value {
+    font-family: $font-family-mono;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #FFFFFF;
+    letter-spacing: -0.02em;
+  }
+}

@@ -1,0 +1,41 @@
+@use '../../abstracts/tokens' as *;
+
+.a-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: $space-1;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.2rem 0.625rem;
+  border-radius: $radius-pill;
+  border: 1px solid transparent;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: all $transition-fast;
+
+  &--cyan {
+    background-color: rgba($color-accent-cyan, 0.12);
+    border-color: rgba($color-accent-cyan, 0.28);
+    color: #5ac8fa;
+  }
+
+  &--emerald {
+    background-color: rgba($color-accent-emerald, 0.12);
+    border-color: rgba($color-accent-emerald, 0.28);
+    color: #30d158;
+  }
+
+  &--amber {
+    background-color: rgba($color-accent-amber, 0.12);
+    border-color: rgba($color-accent-amber, 0.28);
+    color: #ff9f0a;
+  }
+
+  &--purple {
+    background-color: rgba($color-accent-purple, 0.12);
+    border-color: rgba($color-accent-purple, 0.28);
+    color: #bf5af2;
+  }
+}

@@ -5,7 +5,7 @@ import {
   OpcodeFrequencyStats,
   OpcodeCategoryStats,
   OpcodeComparisonItem,
-} from '@/lib/types';
+} from '../../../lib/types';
 
 export interface BaseInstruction {
   id: string;

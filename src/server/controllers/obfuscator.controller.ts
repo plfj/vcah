@@ -1,4 +1,4 @@
-import { ObfuscationConfig, ObfuscationResult } from '@/lib/types';
+import { ObfuscationConfig, ObfuscationResult } from '../../../lib/types';
 import { ObfuscatorService } from '../services/obfuscator.service';
 import { PRESET_PROFILES } from '../presets';
 

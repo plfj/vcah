@@ -1,0 +1,13 @@
+@use '../../abstracts/tokens' as *;
+
+.a-code-token {
+  font-family: $font-family-mono;
+  font-size: 0.8125rem;
+
+  &--keyword { color: #F472B6; font-weight: 600; }
+  &--string { color: #A7F3D0; }
+  &--number { color: #FBBF24; }
+  &--comment { color: #64748B; font-style: italic; }
+  &--function { color: #60A5FA; }
+  &--operator { color: #C084FC; }
+}

@@ -1,0 +1,56 @@
+@use '../abstracts/tokens' as *;
+@use '../abstracts/mixins' as *;
+
+.t-workspace {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  background-color: $color-bg-base;
+  background-image: radial-gradient(circle at 50% 0%, rgba(0, 113, 227, 0.08) 0%, transparent 50%),
+                    radial-gradient(circle at 100% 100%, rgba(41, 151, 255, 0.04) 0%, transparent 40%);
+  background-attachment: fixed;
+
+  &__header {
+    flex-shrink: 0;
+    position: relative;
+    z-index: 50;
+  }
+
+  &__main {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 360px 1fr;
+    overflow: hidden;
+
+    @media (max-width: 1024px) {
+      grid-template-columns: 1fr;
+      overflow-y: auto;
+    }
+  }
+
+  &__sidebar {
+    background-color: rgba(18, 18, 20, 0.7);
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    overflow-y: auto;
+    @include custom-scrollbar;
+  }
+
+  &__content {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    background-color: transparent;
+    @include custom-scrollbar;
+  }
+
+  &__viewport {
+    padding: $space-6;
+    display: flex;
+    flex-direction: column;
+    gap: $space-6;
+  }
+}

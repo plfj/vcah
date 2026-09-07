@@ -1,0 +1,15 @@
+@use '../abstracts/tokens' as *;
+
+:root {
+  --color-bg-base: #{$color-bg-base};
+  --color-bg-surface: #{$color-bg-surface};
+  --color-bg-elevated: #{$color-bg-elevated};
+  --color-border-subtle: #{$color-border-subtle};
+  --color-border-default: #{$color-border-default};
+  --color-text-primary: #{$color-text-primary};
+  --color-text-secondary: #{$color-text-secondary};
+  --color-accent-blue: #{$color-accent-blue};
+  --color-accent-cyan: #{$color-accent-cyan};
+  --color-accent-emerald: #{$color-accent-emerald};
+  --ease-apple: cubic-bezier(0.16, 1, 0.3, 1);
+}

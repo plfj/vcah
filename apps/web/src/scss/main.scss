@@ -1,0 +1,43 @@
+// Strict 7-1 Atomic SCSS Architecture
+
+// 1. Abstracts
+@use 'abstracts/tokens';
+@use 'abstracts/variables';
+@use 'abstracts/functions';
+@use 'abstracts/mixins';
+
+// 2. Base
+@use 'base/reset';
+@use 'base/typography';
+@use 'base/root';
+
+// 3. Layout
+@use 'layout/grid';
+@use 'layout/containers';
+@use 'layout/header';
+@use 'layout/split-pane';
+
+// 4. Templates
+@use 'templates/workspace-template';
+
+// 5. Components: Atoms
+@use 'components/atoms/button';
+@use 'components/atoms/badge';
+@use 'components/atoms/input';
+@use 'components/atoms/toggle';
+@use 'components/atoms/code-token';
+@use 'components/atoms/metric-pill';
+
+// 6. Components: Molecules
+@use 'components/molecules/status-bar';
+@use 'components/molecules/preset-selector';
+@use 'components/molecules/entropy-gauge';
+@use 'components/molecules/tabs';
+@use 'components/molecules/search-bar';
+
+// 7. Components: Organisms
+@use 'components/organisms/editor/code-editor-workspace';
+@use 'components/organisms/studio/config-studio';
+@use 'components/organisms/visualizer/rust-vm-visualizer';
+@use 'components/organisms/visualizer/inspection-dashboard';
+@use 'components/organisms/visualizer/navbar';

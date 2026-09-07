@@ -1,0 +1,30 @@
+@use '../abstracts/tokens' as *;
+
+body {
+  font-family: $font-family-sans;
+  font-size: 0.9375rem; // 15px
+  line-height: 1.47059;
+  letter-spacing: -0.012em;
+  color: $color-text-primary;
+  background-color: $color-bg-base;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code, pre, kbd {
+  font-family: $font-family-mono;
+  letter-spacing: -0.01em;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: $font-family-sans;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.024em;
+  color: $color-text-primary;
+}
+
+h1 { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.03em; }
+h2 { font-size: 1.375rem; letter-spacing: -0.025em; }
+h3 { font-size: 1.125rem; letter-spacing: -0.02em; }
+h4 { font-size: 0.9375rem; letter-spacing: -0.015em; }

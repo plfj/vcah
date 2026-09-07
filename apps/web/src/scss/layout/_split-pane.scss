@@ -1,0 +1,12 @@
+@use '../abstracts/tokens' as *;
+
+.l-split-pane {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: $space-4;
+  height: 100%;
+
+  @media (max-width: 1024px) {
+    grid-template-columns: 1fr;
+  }
+}

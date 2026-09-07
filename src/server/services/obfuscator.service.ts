@@ -1,4 +1,4 @@
-import { ObfuscationConfig, ObfuscationResult } from '@/lib/types';
+import { ObfuscationConfig, ObfuscationResult } from '../../../lib/types';
 import { RustVmGeneratorService } from './rust-vm-generator.service';
 
 /**

@@ -1,0 +1,21 @@
+@use '../abstracts/tokens' as *;
+@use '../abstracts/variables' as *;
+
+.l-grid {
+  display: grid;
+  gap: $space-4;
+
+  &--12 {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+  }
+
+  &--workspace {
+    grid-template-columns: 340px 1fr;
+    height: calc(100vh - 64px);
+
+    @media (max-width: $bp-lg) {
+      grid-template-columns: 1fr;
+      height: auto;
+    }
+  }
+}

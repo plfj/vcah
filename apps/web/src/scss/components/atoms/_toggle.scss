@@ -1,0 +1,45 @@
+@use '../../abstracts/tokens' as *;
+
+.a-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: $space-2;
+  cursor: pointer;
+  user-select: none;
+
+  &__track {
+    width: 44px;
+    height: 24px;
+    background-color: rgba(120, 120, 128, 0.32);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: $radius-pill;
+    position: relative;
+    transition: background-color $transition-normal, border-color $transition-normal;
+  }
+
+  &__thumb {
+    width: 20px;
+    height: 20px;
+    background-color: #FFFFFF;
+    border-radius: 50%;
+    position: absolute;
+    top: 1px;
+    left: 1px;
+    box-shadow: 0 3px 7px rgba(0, 0, 0, 0.28), 0 1px 1px rgba(0, 0, 0, 0.16);
+    transition: transform $transition-bounce, background-color $transition-normal;
+  }
+
+  &:hover &__track {
+    background-color: rgba(120, 120, 128, 0.45);
+  }
+
+  // Apple Active State (iOS Green or Apple Blue)
+  &--active &__track {
+    background-color: $color-accent-green-ios;
+    border-color: rgba($color-accent-green-ios, 0.5);
+  }
+
+  &--active &__thumb {
+    transform: translateX(20px);
+  }
+}

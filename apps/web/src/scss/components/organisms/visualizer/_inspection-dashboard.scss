@@ -1,0 +1,63 @@
+@use '../../../abstracts/tokens' as *;
+@use '../../../abstracts/mixins' as *;
+
+.o-inspection-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: $space-5;
+  padding: $space-5;
+  background-color: rgba(22, 22, 24, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: $radius-lg;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4);
+
+  &__kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: $space-3;
+  }
+
+  &__table-wrapper {
+    overflow-x: auto;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: $radius-md;
+    background: rgba(18, 18, 20, 0.5);
+    @include custom-scrollbar;
+  }
+
+  &__table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+    letter-spacing: -0.01em;
+
+    th, td {
+      padding: 0.625rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    th {
+      background-color: rgba(28, 28, 30, 0.8);
+      color: $color-text-secondary;
+      font-weight: 500;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    tr {
+      transition: background-color $transition-fast;
+
+      &:hover td {
+        background-color: rgba(255, 255, 255, 0.04);
+      }
+    }
+
+    td {
+      color: $color-text-primary;
+    }
+  }
+}

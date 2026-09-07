@@ -1,0 +1,100 @@
+@use '../../abstracts/tokens' as *;
+@use '../../abstracts/mixins' as *;
+
+.a-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: $space-2;
+  font-family: $font-family-sans;
+  font-weight: 500;
+  font-size: 0.84375rem; // ~13.5px
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  padding: 0.5rem 1.125rem; // 8px 18px (Apple standard 1:2.25 ratio)
+  border-radius: $radius-pill; // Apple Pill
+  transition: all $transition-normal;
+  white-space: nowrap;
+  user-select: none;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+
+  &:active:not(:disabled) {
+    transform: scale(0.96); // Apple signature spring tactile compression
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  // Apple Primary Pill (Iconic Apple Blue)
+  &--primary {
+    background-color: $color-accent-blue;
+    color: #FFFFFF;
+    box-shadow: 0 2px 8px rgba(0, 113, 227, 0.35);
+
+    &:hover:not(:disabled) {
+      background-color: $color-accent-blue-hover;
+      box-shadow: 0 4px 18px $color-accent-blue-glow;
+      transform: translateY(-1px);
+    }
+
+    &:active:not(:disabled) {
+      background-color: $color-accent-blue-active;
+      transform: scale(0.96);
+    }
+  }
+
+  // Apple Secondary Glass Pill
+  &--secondary {
+    background-color: rgba(255, 255, 255, 0.08);
+    border: 1px solid $color-border-default;
+    color: $color-text-primary;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+
+    &:hover:not(:disabled) {
+      background-color: rgba(255, 255, 255, 0.14);
+      border-color: $color-border-hover;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+    }
+
+    &:active:not(:disabled) {
+      background-color: rgba(255, 255, 255, 0.1);
+      transform: scale(0.96);
+    }
+  }
+
+  // Apple Accent Pill (Pro Hardware Gradient)
+  &--accent {
+    background: linear-gradient(135deg, $color-accent-blue 0%, $color-accent-cyan 100%);
+    color: #FFFFFF;
+    box-shadow: 0 2px 10px rgba(41, 151, 255, 0.35);
+
+    &:hover:not(:disabled) {
+      filter: brightness(1.08);
+      box-shadow: 0 4px 20px rgba(41, 151, 255, 0.5);
+      transform: translateY(-1px);
+    }
+
+    &:active:not(:disabled) {
+      transform: scale(0.96);
+    }
+  }
+
+  &--sm {
+    padding: 0.3125rem 0.75rem;
+    font-size: 0.75rem;
+    border-radius: $radius-pill;
+  }
+
+  &--icon {
+    padding: $space-2;
+    border-radius: $radius-full;
+    width: 32px;
+    height: 32px;
+  }
+}

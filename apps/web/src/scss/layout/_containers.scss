@@ -1,0 +1,16 @@
+@use '../abstracts/tokens' as *;
+@use '../abstracts/mixins' as *;
+
+.l-container {
+  width: 100%;
+  max-width: 1680px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: $space-4;
+  padding-right: $space-4;
+}
+
+.l-scrollable {
+  overflow-y: auto;
+  @include custom-scrollbar;
+}

@@ -1,0 +1,11 @@
+@use 'sass:math';
+
+// Mathematical rem conversion
+@function rem($px) {
+  @return math.div($px, 16px) * 1rem;
+}
+
+// Alpha transparency helper
+@function color-alpha($color, $alpha) {
+  @return rgba($color, $alpha);
+}
