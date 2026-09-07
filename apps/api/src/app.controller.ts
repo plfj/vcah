@@ -7,6 +7,10 @@ import * as fs from 'fs';
 export class AppController {
   @Get()
   getApp(@Res() res: Response) {
+    const distHtml = path.resolve(process.cwd(), 'dist/index.html');
+    if (fs.existsSync(distHtml)) {
+      return res.sendFile(distHtml);
+    }
     const webDistPath = path.resolve(process.cwd(), 'apps/web/dist/index.html');
     if (fs.existsSync(webDistPath)) {
       return res.sendFile(webDistPath);

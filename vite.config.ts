@@ -3,10 +3,9 @@ import { fileURLToPath, URL } from 'node:url';
 
 export default defineConfig({
   root: '.',
-  publicDir: 'public',
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url)),
+      '@': fileURLToPath(new URL('./apps/web/src', import.meta.url)),
     },
   },
   server: {

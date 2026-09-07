@@ -17,8 +17,11 @@ export async function bootstrap() {
     })
   );
 
+  const distPath = path.resolve(process.cwd(), 'dist');
   const webDistPath = path.resolve(process.cwd(), 'apps/web/dist');
-  if (fs.existsSync(webDistPath)) {
+  if (fs.existsSync(distPath) && fs.existsSync(path.join(distPath, 'index.html'))) {
+    app.useStaticAssets(distPath);
+  } else if (fs.existsSync(webDistPath)) {
     app.useStaticAssets(webDistPath);
   }
 

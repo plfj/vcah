@@ -2,10 +2,11 @@
   "name": "ai-studio-applet",
   "version": "0.1.0",
   "private": true,
+  "main": "dist/src/main.js",
   "scripts": {
-    "dev": "vite build apps/web && tsc && node dist/apps/api/src/main.js",
-    "build": "vite build apps/web && tsc",
-    "start": "node dist/apps/api/src/main.js",
+    "dev": "vite build && tsc && node dist/src/main.js",
+    "build": "vite build && tsc",
+    "start": "node dist/src/main.js",
     "lint": "eslint ."
   },
   "dependencies": {
