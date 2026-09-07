@@ -6,7 +6,13 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { AppModule } from '../apps/api/src/app.module';
 
-export async function bootstrap() {
+let cachedApp: NestExpressApplication | null = null;
+
+export async function bootstrap(): Promise<NestExpressApplication> {
+  if (cachedApp) {
+    return cachedApp;
+  }
+
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   app.enableCors({
     origin: '*',
@@ -29,10 +35,23 @@ export async function bootstrap() {
     app.useStaticAssets(webDistPath);
   }
 
+  if (process.env.VERCEL) {
+    await app.init();
+    cachedApp = app;
+    return app;
+  }
+
   const port = Number(process.env.PORT) || 3000;
   await app.listen(port, '0.0.0.0');
   console.log(`[PyVM NestJS Orchestration Engine] Server running on port ${port}`);
+  cachedApp = app;
   return app;
+}
+
+export default async function handler(req: any, res: any) {
+  const app = await bootstrap();
+  const instance = app.getHttpAdapter().getInstance();
+  return instance(req, res);
 }
 
 if (require.main === module || !process.env.VERCEL) {
