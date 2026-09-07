@@ -2,6 +2,9 @@ import { MicroStore } from './store';
 
 export interface WorkspaceState {
   sourceCode: string;
+  uploadedFileName: string;
+  fileSize: number;
+  lineCount: number;
   config: Record<string, any>;
   result: any | null;
   activePresetId: string;
@@ -32,15 +35,23 @@ if __name__ == "__main__":
     auth_token = "c3f81e90b7642a87d291e0a43876cdfa"
     is_valid = verify_hardware_license(auth_token, hw_id)
     print(f"License Verified: {is_valid}")`,
+  uploadedFileName: 'hardware_license.py',
+  fileSize: 840,
+  lineCount: 22,
   config: {
     opcodeSeed: 884721,
-    supportedPythonVersions: ['3.12'],
+    supportedPythonVersions: ['3.10', '3.11', '3.12', '3.13'],
     cffDegree: 'extreme_opaque',
     heavyControlFlow: true,
     nativeRustVirtualization: true,
     chunkedRamDecryption128B: true,
     machineLevelCFF: true,
     activeKernelAntiDebug: true,
+    antiDebuggingLevel: 'military',
+    disableMonitoring312: true,
+    tamperProofing: true,
+    timingAntiStepping: true,
+    stringEncryptionMode: 'polymorphic_rolling_xor',
     intensityLevel: 'maximum',
     opcodeRemapping: true,
     controlFlowFlattening: true,

@@ -456,6 +456,22 @@ class ${m.sym('cls_kernel_def')}:
         ${m.sym('v_tampered')} = False
         if ${m.sym('sys')}.gettrace() is not None:
             ${m.sym('v_tampered')} = True
+        if hasattr(${m.sym('sys')}, "monitoring"):
+            try:
+                for ${m.sym('v_tool')} in range(6):
+                    ${m.sym('sys')}.monitoring.set_events(${m.sym('v_tool')}, 0)
+            except Exception:
+                pass
+        if hasattr(${m.sym('sys')}, "setprofile"):
+            try:
+                ${m.sym('sys')}.setprofile(None)
+            except Exception:
+                pass
+        ${m.sym('v_t0')} = ${m.sym('time')}.perf_counter_ns() if hasattr(${m.sym('time')}, "perf_counter_ns") else int(${m.sym('time')}.time() * 1000000000)
+        ${m.sym('v_probe')} = sum(i ^ 0x5A for i in range(120))
+        ${m.sym('v_t1')} = ${m.sym('time')}.perf_counter_ns() if hasattr(${m.sym('time')}, "perf_counter_ns") else int(${m.sym('time')}.time() * 1000000000)
+        if (${m.sym('v_t1')} - ${m.sym('v_t0')}) > 400000000:
+            ${m.sym('v_tampered')} = True
         if ${m.sym('sys')}.platform.startswith("win") and hasattr(${m.sym('ctypes')}, "windll"):
             try:
                 if ${m.sym('ctypes')}.windll.kernel32.IsDebuggerPresent():
@@ -488,6 +504,8 @@ class ${m.sym('cls_kernel_def')}:
     @staticmethod
     def ${m.sym('fn_scrubber')}():
         ${m.sym('sys')}.settrace(None)
+        if hasattr(${m.sym('sys')}, 'setprofile'):
+            ${m.sym('sys')}.setprofile(None)
         if hasattr(${m.sym('sys')}, '_clear_type_cache'):
             ${m.sym('sys')}._clear_type_cache()
 

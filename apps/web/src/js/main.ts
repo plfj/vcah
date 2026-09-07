@@ -149,8 +149,15 @@ export function initializeApp(container: HTMLElement) {
   const editorWorkspace = new CodeEditorWorkspaceOrganism({
     sourceCode: workspaceStore.getState().sourceCode,
     obfuscatedCode: '',
-    onSourceChange: (code) => {
-      workspaceStore.setState({ sourceCode: code });
+    uploadedFileName: workspaceStore.getState().uploadedFileName,
+    onSourceChange: (code, fileName) => {
+      workspaceStore.setState({
+        sourceCode: code,
+        ...(fileName ? { uploadedFileName: fileName } : {}),
+      });
+    },
+    onObfuscateTrigger: async () => {
+      await runObfuscation();
     },
   });
 
