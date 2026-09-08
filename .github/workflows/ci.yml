@@ -1,0 +1,118 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master, develop]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Node.js Lint, Build & Unit Tests Matrix
+  test-node:
+    name: Node.js ${{ matrix.node-version }} (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        node-version: [20.x, 22.x]
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run Linter (ESLint)
+        run: npm run lint
+
+      - name: Build Application & TypeScript Compilation
+        run: npm run build
+
+      - name: Run TypeScript & Server Services Test Suite
+        run: npm test
+
+  # Bun Compatibility & Fast Execution Test
+  test-bun:
+    name: Bun Runtime Compatibility
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun Environment
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install Dependencies with Bun
+        run: bun install
+
+      - name: Run Build with Bun
+        run: bun run build
+
+      - name: Run Tests with Bun
+        run: bun run test
+
+  # Rust Native Virtual Machine Kernel Test Suite
+  test-rust-core:
+    name: Rust VM Core (${{ matrix.toolchain }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        toolchain: [stable, beta]
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust Toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.toolchain }}
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: crates/rust_vm_core
+
+      - name: Check Rust Crate Syntax & Types
+        run: cargo check --manifest-path crates/rust_vm_core/Cargo.toml --all-targets
+
+      - name: Run Rust VM Core Kernel Tests
+        run: cargo test --manifest-path crates/rust_vm_core/Cargo.toml --verbose
+
+  # Frontend Web Client Build Verification
+  test-frontend-web:
+    name: Frontend Client Build (@pyvm/web)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+
+      - name: Install Root Dependencies
+        run: npm ci
+
+      - name: Validate Web Bundle Compilation
+        run: |
+          if [ -d "apps/web" ]; then
+            cd apps/web && npm install --no-save && npm run build
+          fi

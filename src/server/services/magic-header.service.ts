@@ -4,7 +4,8 @@ export class MagicHeaderService {
    * Cleans and validates a 4-byte hex string (e.g., "7F50564D" or "0x7f, 0x50, 0x56, 0x4d")
    */
   public static sanitizeMagicHex(input: string): string {
-    const cleaned = input.replace(/[^0-9A-Fa-f]/g, '').toUpperCase();
+    const withoutPrefix = input.replace(/0x/gi, '');
+    const cleaned = withoutPrefix.replace(/[^0-9A-Fa-f]/g, '').toUpperCase();
     if (cleaned.length < 8) {
       return cleaned.padEnd(8, '0');
     }

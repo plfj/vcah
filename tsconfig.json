@@ -17,6 +17,6 @@
       "@/*": ["./*"]
     }
   },
-  "include": ["apps/api/src/**/*", "src/**/*", "lib/**/*", "api/**/*"],
+  "include": ["apps/api/src/**/*", "src/**/*", "lib/**/*", "api/**/*", "test/**/*"],
   "exclude": ["node_modules", "dist", "apps/web"]
 }

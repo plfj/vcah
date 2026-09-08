@@ -7,7 +7,9 @@
     "dev": "vite build && tsc && node dist/src/main.js",
     "build": "vite build && tsc",
     "start": "node dist/src/main.js",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test": "node --test dist/test/**/*.test.js",
+    "test:all": "npm run build && npm run test"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
