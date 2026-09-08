@@ -1,0 +1,4 @@
+# Treat lock files as generated to prevent merge conflict stops
+package-lock.json merge=binary
+apps/web/package-lock.json merge=binary
+crates/rust_vm_core/Cargo.lock merge=binary

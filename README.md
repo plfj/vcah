@@ -216,10 +216,10 @@ cargo test --manifest-path crates/rust_vm_core/Cargo.toml
 
 Automated dependency maintenance is configured in `.github/dependabot.yml` covering:
 
-- **NPM & Bun Packages**: Daily updates for root and web application dependencies, partitioned into grouped pull requests for `production-dependencies` and `development-dependencies`.
-- **Rust Cargo Crates**: Daily dependency upgrades for `crates/rust_vm_core`, batched via grouped `cargo-dependencies` PRs.
+- **NPM & Bun Packages**: Daily updates for root and web application dependencies with atomic grouping for `@nestjs/*` framework modules and `typescript` tooling, ensuring interdependent major version upgrades are combined in unified PRs to prevent lockfile conflicts.
+- **Rust Cargo Crates**: Daily dependency upgrades for `crates/rust_vm_core`, with atomic `napi` grouping to bundle `napi` and `napi-derive` updates together in `Cargo.lock`.
 - **GitHub Actions**: Daily version tracking for continuous integration actions, batched via grouped `actions-dependencies` PRs.
-- **Automated Rebase**: `rebase-strategy: "auto"` enabled across all ecosystems to automatically rebase and resolve conflicts on open PRs when the base branch is updated.
+- **Automated Rebase & Conflict Mitigation**: `rebase-strategy: "auto"` enabled across all ecosystems to automatically rebase and resolve conflicts on open PRs when the base branch is updated, paired with binary lockfile merge attributes in `.gitattributes`.
 
 ---
 

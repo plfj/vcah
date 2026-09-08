@@ -19,14 +19,31 @@ updates:
       - "bun"
       - "backend"
     groups:
+      nestjs:
+        patterns:
+          - "@nestjs/*"
+        update-types:
+          - "major"
+          - "minor"
+          - "patch"
+      typescript-tooling:
+        patterns:
+          - "typescript"
+          - "@types/*"
+        update-types:
+          - "major"
+          - "minor"
+          - "patch"
       production-dependencies:
         dependency-type: "production"
         update-types:
+          - "major"
           - "minor"
           - "patch"
       development-dependencies:
         dependency-type: "development"
         update-types:
+          - "major"
           - "minor"
           - "patch"
 
@@ -47,14 +64,11 @@ updates:
       - "frontend"
       - "web"
     groups:
-      production-dependencies:
-        dependency-type: "production"
+      web-dependencies:
+        patterns:
+          - "*"
         update-types:
-          - "minor"
-          - "patch"
-      development-dependencies:
-        dependency-type: "development"
-        update-types:
+          - "major"
           - "minor"
           - "patch"
 
@@ -76,10 +90,18 @@ updates:
       - "cargo"
       - "vm-core"
     groups:
+      napi:
+        patterns:
+          - "napi*"
+        update-types:
+          - "major"
+          - "minor"
+          - "patch"
       cargo-dependencies:
         patterns:
           - "*"
         update-types:
+          - "major"
           - "minor"
           - "patch"
 
@@ -104,5 +126,6 @@ updates:
         patterns:
           - "*"
         update-types:
+          - "major"
           - "minor"
           - "patch"
