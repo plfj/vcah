@@ -44,6 +44,17 @@ updates:
       - "dependencies"
       - "frontend"
       - "web"
+    groups:
+      production-dependencies:
+        dependency-type: "production"
+        update-types:
+          - "minor"
+          - "patch"
+      development-dependencies:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
 
   # Rust Virtual Machine Core (crates/rust_vm_core)
   - package-ecosystem: "cargo"
@@ -61,6 +72,13 @@ updates:
       - "rust"
       - "cargo"
       - "vm-core"
+    groups:
+      cargo-dependencies:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
 
   # GitHub Actions CI/CD Workflows
   - package-ecosystem: "github-actions"
@@ -77,3 +95,10 @@ updates:
       - "dependencies"
       - "github-actions"
       - "ci"
+    groups:
+      actions-dependencies:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"

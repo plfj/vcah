@@ -216,9 +216,9 @@ cargo test --manifest-path crates/rust_vm_core/Cargo.toml
 
 Automated dependency maintenance is configured in `.github/dependabot.yml` covering:
 
-- **NPM & Bun Packages**: Daily updates for root and web application dependencies.
-- **Rust Cargo Crates**: Daily dependency upgrades for `crates/rust_vm_core`.
-- **GitHub Actions**: Daily version tracking for continuous integration actions.
+- **NPM & Bun Packages**: Daily updates for root and web application dependencies, partitioned into grouped pull requests for `production-dependencies` and `development-dependencies`.
+- **Rust Cargo Crates**: Daily dependency upgrades for `crates/rust_vm_core`, batched via grouped `cargo-dependencies` PRs.
+- **GitHub Actions**: Daily version tracking for continuous integration actions, batched via grouped `actions-dependencies` PRs.
 
 ---
 
