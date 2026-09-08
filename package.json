@@ -37,7 +37,7 @@
     "@tailwindcss/postcss": "4.3.3",
     "@tailwindcss/typography": "^0.5.19",
     "@types/express": "^5.0.6",
-    "@types/node": "^20",
+    "@types/node": "^26",
     "eslint": "9.39.1",
     "firebase-tools": "^15.0.0",
     "sass": "^1.104.0",
