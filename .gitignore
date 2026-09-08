@@ -1,7 +1,17 @@
 node_modules/
+dist/
+build/
 .next/
 coverage/
 .DS_Store
 *.log
 .env*
 !.env.example
+
+# Rust compilation artifacts
+target/
+crates/**/target/
+
+# IDE files
+.vscode/
+.idea/

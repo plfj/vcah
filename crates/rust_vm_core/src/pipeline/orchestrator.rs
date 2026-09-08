@@ -92,7 +92,7 @@ int pyvm_rust_entry(void) {{
             &magic_header.standard_magic_hex[..6]
         );
 
-        let hash_input = format!(
+        let _hash_input = format!(
             "{}:{}:{}:{}",
             input.seed, input.python_version, virtual_program.total_instructions, entropy_analysis.shannon_entropy
         );
