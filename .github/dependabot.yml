@@ -8,6 +8,7 @@ updates:
       time: "04:00"
       timezone: "UTC"
     open-pull-requests-limit: 10
+    rebase-strategy: "auto"
     commit-message:
       prefix: "chore(deps)"
       prefix-development: "chore(deps-dev)"
@@ -37,6 +38,7 @@ updates:
       time: "04:30"
       timezone: "UTC"
     open-pull-requests-limit: 5
+    rebase-strategy: "auto"
     commit-message:
       prefix: "chore(web-deps)"
       include: "scope"
@@ -64,6 +66,7 @@ updates:
       time: "05:00"
       timezone: "UTC"
     open-pull-requests-limit: 5
+    rebase-strategy: "auto"
     commit-message:
       prefix: "chore(cargo-deps)"
       include: "scope"
@@ -88,6 +91,7 @@ updates:
       time: "05:30"
       timezone: "UTC"
     open-pull-requests-limit: 5
+    rebase-strategy: "auto"
     commit-message:
       prefix: "ci(actions)"
       include: "scope"
