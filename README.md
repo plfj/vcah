@@ -4,7 +4,7 @@
 [![Security Audit](https://github.com/plfj/vcah/actions/workflows/security.yml/badge.svg)](https://github.com/plfj/vcah/actions/workflows/security.yml)
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/License-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE)
 [![Python Compatibility](https://img.shields.io/badge/Python-3.8%20|%203.9%20|%203.10%20|%203.11%20|%203.12%20|%203.13%20|%203.14-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![Node Version](https://img.shields.io/badge/Node.js-20.x%20|%2022.x-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![Node Version](https://img.shields.io/badge/Node.js-20.x%20|%2022.x%20|%2024.x%20(LTS)-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![Bun Ready](https://img.shields.io/badge/Bun-1.0+-FBF0DF?logo=bun&logoColor=black)](https://bun.sh/)
 [![Rust Toolchain](https://img.shields.io/badge/Rust-1.75+-000000?logo=rust&logoColor=white)](https://www.rust-lang.org/)
 [![Shannon Entropy](https://img.shields.io/badge/Shannon%20Entropy-7.99%20%2F%208.00-success)](https://en.wikipedia.org/wiki/Entropy_(information_theory))
@@ -89,7 +89,7 @@ By combining native Rust virtual machine isolation, non-linear control flow flat
 
 ### Prerequisites
 
-- **Node.js** `>= 20.0.0` or **Bun** `>= 1.0.0`
+- **Node.js** `>= 20.0.0` (Active LTS releases: `20.x`, `22.x`, or `24.x`) or **Bun** `>= 1.0.0`
 - **npm**, **pnpm**, **yarn**, or **bun**
 - **Python** `>= 3.8` (for executing protected artifacts)
 - *(Optional)* **Rust Toolchain** `>= 1.75` (for compiling native VM Rust crates)
@@ -158,8 +158,13 @@ cargo test --manifest-path crates/rust_vm_core/Cargo.toml
 ├── .github/
 │   ├── dependabot.yml              # Automated dependency updates (npm, bun, cargo, actions)
 │   └── workflows/
-│       ├── ci.yml                  # Continuous Integration (Node 20/22, Bun, Rust, Web)
+│       ├── ci.yml                  # Continuous Integration (Node 22/24 LTS, Bun, Rust, Web)
 │       └── security.yml            # Security audit, dependency scan & CodeQL analysis
+├── .nvmrc                          # Node.js LTS stream specification (lts/*)
+├── api/                            # Zero-dependency Vercel Serverless Function handlers
+│   ├── obfuscate.ts                # POST /api/obfuscate serverless endpoint
+│   ├── presets.ts                  # GET /api/presets serverless endpoint
+│   └── simulate.ts                 # POST /api/simulate serverless endpoint
 ├── apps/
 │   └── web/                        # High-precision TypeScript frontend workspace
 │       ├── package.json
@@ -183,7 +188,7 @@ cargo test --manifest-path crates/rust_vm_core/Cargo.toml
 ├── test/
 │   └── services.test.ts            # Node.js native test suite
 ├── LICENSE                         # Dual MIT OR Apache-2.0 License
-├── package.json                    # Project manifest & scripts
+├── package.json                    # Project manifest, engines & scripts
 └── tsconfig.json                   # TypeScript compiler configuration
 ```
 
@@ -212,10 +217,21 @@ cargo test --manifest-path crates/rust_vm_core/Cargo.toml
 
 ---
 
+## Vercel & Cloud Serverless Deployment
+
+PyVM is architected for zero-friction deployment on Vercel and serverless container platforms:
+
+- **Universal Web Primitives**: Cryptographic keystream derivations, entropy distributions, and VM generator services rely exclusively on standard ECMAScript Web APIs (`TextEncoder`, `Uint8Array`) rather than platform-locked Node.js modules (`node:buffer`, `node:http`).
+- **Decoupled Serverless Handlers (`api/`)**: Standalone edge-compatible endpoint handlers implement self-contained `ApiRequest` and `ApiResponse` interfaces, eliminating ambient `@types/node` compiler dependencies during isolated Vercel Serverless Function transpilation.
+- **Dual Runtime Support**: Runs seamlessly in serverless environments (via Vercel Functions routing to `/api/*`) as well as long-running containerized servers (via NestJS on Node.js / Bun).
+
+---
+
 ## Dependabot & Maintenance
 
 Automated dependency maintenance is configured in `.github/dependabot.yml` covering:
 
+- **Node.js LTS Version Pinning**: Explicitly filters out short-lived, odd-numbered Node.js releases (`21.x`, `23.x`, `25.x`, `27.x`, `29.x`) for both `node` and `@types/node`. Updates are strictly constrained to active Long Term Support (LTS) streams (e.g. Node 20, 22, 24).
 - **NPM & Bun Packages**: Daily updates for root and web application dependencies with atomic grouping for `@nestjs/*` framework modules and `typescript` tooling, ensuring interdependent major version upgrades are combined in unified PRs to prevent lockfile conflicts.
 - **Rust Cargo Crates**: Daily dependency upgrades for `crates/rust_vm_core`, with atomic `napi` grouping to bundle `napi` and `napi-derive` updates together in `Cargo.lock`.
 - **GitHub Actions**: Daily version tracking for continuous integration actions, batched via grouped `actions-dependencies` PRs.

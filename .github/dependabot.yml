@@ -34,6 +34,10 @@ updates:
           - "25.x"
           - "27.x"
           - "29.x"
+      # Pin NestJS to LTS v10 to ensure CommonJS and serverless require() compatibility across Vercel/Lambda runtimes
+      - dependency-name: "@nestjs/*"
+        versions:
+          - ">= 11.a"
     groups:
       nestjs:
         patterns:
