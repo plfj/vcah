@@ -10,9 +10,10 @@
     "isolatedModules": true,
     "noEmit": true,
     "strict": false,
+    "noUncheckedSideEffectImports": false,
     "paths": {
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src/**/*.ts", "vite.config.ts"]
+  "include": ["src/**/*.ts", "src/**/*.d.ts", "vite.config.ts"]
 }
