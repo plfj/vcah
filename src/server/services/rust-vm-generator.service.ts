@@ -1,3 +1,4 @@
+import { Buffer } from 'node:buffer';
 import { ObfuscationConfig } from '../../../lib/types';
 import { MagicHeaderService } from './magic-header.service';
 import { OpcodeScramblerService } from './opcode-scrambler.service';
@@ -87,7 +88,7 @@ export class RustVmGeneratorService {
     } else if (keyBuf.length > 32) {
       keyBuf = keyBuf.subarray(0, 32);
     }
-    return Array.from(keyBuf);
+    return Array.from(keyBuf) as number[];
   }
 
   /**
@@ -142,10 +143,10 @@ export class RustVmGeneratorService {
     config?: any
   ): { bytes: number[]; chunkCount: number; w1Hex: string; w2Hex: string } {
     const rawKey = stringKey || 'PyShield_Master_Key_Native_2026';
-    const sourceUtf8 = Array.from(Buffer.from(sourceCode, 'utf-8'));
+    const sourceUtf8: number[] = Array.from(Buffer.from(sourceCode, 'utf-8')) as number[];
 
     // Cryptographic Witnesses for Anti-Switch Enforcing
-    const w1 = this.computeWitness(Array.from(Buffer.from(rawKey + magicHex, 'utf-8')), 0x5A5A5A5A);
+    const w1 = this.computeWitness(Array.from(Buffer.from(rawKey + magicHex, 'utf-8')) as number[], 0x5A5A5A5A);
     const w2 = this.simulateCffWitness(w1);
     const w1Hex = w1.toString(16);
     const w2Hex = w2.toString(16);
@@ -154,9 +155,9 @@ export class RustVmGeneratorService {
     const keyL3 = this.derive32ByteKey(rawKey, `_L3_Core_${w2Hex}`);
     const l3EncryptedBody: number[] = [];
     for (let i = 0; i < sourceUtf8.length; i++) {
-      const k = keyL3[i % 32];
+      const k = Number(keyL3[i % 32] || 0);
       const rot = ((i * 37) ^ (k * 11 + 5)) & 0xFF;
-      l3EncryptedBody.push(sourceUtf8[i] ^ k ^ rot);
+      l3EncryptedBody.push(Number(sourceUtf8[i] || 0) ^ k ^ rot);
     }
 
     const l3Checksum = this.computeChecksum(sourceUtf8);

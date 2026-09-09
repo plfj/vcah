@@ -18,6 +18,22 @@ updates:
       - "npm"
       - "bun"
       - "backend"
+    ignore:
+      # Restrict Node.js and @types/node strictly to Long Term Support (LTS) streams (ignore non-LTS odd major versions)
+      - dependency-name: "@types/node"
+        versions:
+          - "21.x"
+          - "23.x"
+          - "25.x"
+          - "27.x"
+          - "29.x"
+      - dependency-name: "node"
+        versions:
+          - "21.x"
+          - "23.x"
+          - "25.x"
+          - "27.x"
+          - "29.x"
     groups:
       nestjs:
         patterns:
@@ -63,6 +79,14 @@ updates:
       - "dependencies"
       - "frontend"
       - "web"
+    ignore:
+      - dependency-name: "@types/node"
+        versions:
+          - "21.x"
+          - "23.x"
+          - "25.x"
+          - "27.x"
+          - "29.x"
     groups:
       web-dependencies:
         patterns:

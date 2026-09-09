@@ -1,4 +1,4 @@
-import type { IncomingMessage, ServerResponse } from 'http';
+import type { IncomingMessage, ServerResponse } from 'node:http';
 import { RustVmGeneratorService } from '../src/server/services/rust-vm-generator.service';
 
 function parseBody(req: IncomingMessage): Promise<any> {
