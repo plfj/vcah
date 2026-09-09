@@ -1,7 +1,18 @@
-import type { IncomingMessage, ServerResponse } from 'http';
 import { PRESET_PROFILES } from '../src/server/presets';
 
-export default function handler(req: IncomingMessage, res: ServerResponse) {
+type ApiRequest = {
+  method?: string;
+  [key: string]: any;
+};
+
+type ApiResponse = {
+  statusCode?: number;
+  setHeader: (name: string, value: string | number | readonly string[]) => void;
+  end: (data?: any) => void;
+  [key: string]: any;
+};
+
+export default function handler(req: ApiRequest, res: ApiResponse) {
   res.setHeader('Content-Type', 'application/json');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');

@@ -1,4 +1,3 @@
-import { Buffer } from 'node:buffer';
 import { ObfuscationConfig } from '../../../lib/types';
 import { MagicHeaderService } from './magic-header.service';
 import { OpcodeScramblerService } from './opcode-scrambler.service';
@@ -81,14 +80,11 @@ export class RustVmGeneratorService {
    * Derives a deterministic 32-byte key buffer from a string and salt.
    */
   private static derive32ByteKey(baseKey: string, salt: string): number[] {
-    let keyBuf = Buffer.from((baseKey || 'PyShield_Native_Key_2026') + salt, 'utf-8');
-    if (keyBuf.length < 32) {
-      const pad = Buffer.alloc(32 - keyBuf.length, 0x5B);
-      keyBuf = Buffer.concat([keyBuf, pad]);
-    } else if (keyBuf.length > 32) {
-      keyBuf = keyBuf.subarray(0, 32);
-    }
-    return Array.from(keyBuf) as number[];
+    const encoded = new TextEncoder().encode((baseKey || 'PyShield_Native_Key_2026') + salt);
+    const keyBytes = new Uint8Array(32);
+    keyBytes.fill(0x5B);
+    keyBytes.set(encoded.subarray(0, 32));
+    return Array.from(keyBytes);
   }
 
   /**
@@ -143,10 +139,10 @@ export class RustVmGeneratorService {
     config?: any
   ): { bytes: number[]; chunkCount: number; w1Hex: string; w2Hex: string } {
     const rawKey = stringKey || 'PyShield_Master_Key_Native_2026';
-    const sourceUtf8: number[] = Array.from(Buffer.from(sourceCode, 'utf-8')) as number[];
+    const sourceUtf8: number[] = Array.from(new TextEncoder().encode(sourceCode));
 
     // Cryptographic Witnesses for Anti-Switch Enforcing
-    const w1 = this.computeWitness(Array.from(Buffer.from(rawKey + magicHex, 'utf-8')) as number[], 0x5A5A5A5A);
+    const w1 = this.computeWitness(Array.from(new TextEncoder().encode(rawKey + magicHex)), 0x5A5A5A5A);
     const w2 = this.simulateCffWitness(w1);
     const w1Hex = w1.toString(16);
     const w2Hex = w2.toString(16);
@@ -829,8 +825,8 @@ RustNativeInterpretor = Interpretor
 Interpretor(globals(), ${directBytecodeLiteral})
 `;
 
-    const originalSize = Buffer.byteLength(sourceCode, 'utf-8');
-    const obfuscatedSize = Buffer.byteLength(generatedPythonCode, 'utf-8');
+    const originalSize = new TextEncoder().encode(sourceCode).length;
+    const obfuscatedSize = new TextEncoder().encode(generatedPythonCode).length;
     const expansionRatio = Number((obfuscatedSize / (originalSize || 1)).toFixed(2));
     const genTime = Date.now() - startTime;
 

@@ -1,4 +1,3 @@
-import { Buffer } from 'node:buffer';
 import { EntropyLevel } from '../../../lib/types';
 
 export class EntropyService {
@@ -63,7 +62,7 @@ export class EntropyService {
     basePayloadBytes: number[],
     stringKey: string
   ): { finalBytes: number[]; junkCount: number } {
-    const keyBytes: number[] = Array.from(Buffer.from(stringKey || 'PyShield_RustVM_Direct_Key', 'utf-8'));
+    const keyBytes: number[] = Array.from(new TextEncoder().encode(stringKey || 'PyShield_RustVM_Direct_Key'));
     const finalBytes: number[] = [];
 
     // Direct authentic byte encoding with non-linear pseudo-random keystream diffusion

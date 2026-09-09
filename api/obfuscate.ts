@@ -1,10 +1,22 @@
-import type { IncomingMessage, ServerResponse } from 'node:http';
 import { RustVmGeneratorService } from '../src/server/services/rust-vm-generator.service';
 
-function parseBody(req: IncomingMessage): Promise<any> {
+type ApiRequest = {
+  method?: string;
+  on: (event: string, callback: (...args: any[]) => void) => void;
+  [key: string]: any;
+};
+
+type ApiResponse = {
+  statusCode?: number;
+  setHeader: (name: string, value: string | number | readonly string[]) => void;
+  end: (data?: any) => void;
+  [key: string]: any;
+};
+
+function parseBody(req: ApiRequest): Promise<any> {
   return new Promise((resolve, reject) => {
     let body = '';
-    req.on('data', (chunk) => {
+    req.on('data', (chunk: any) => {
       body += chunk;
     });
     req.on('end', () => {
@@ -18,7 +30,7 @@ function parseBody(req: IncomingMessage): Promise<any> {
   });
 }
 
-export default async function handler(req: IncomingMessage, res: ServerResponse) {
+export default async function handler(req: ApiRequest, res: ApiResponse) {
   res.setHeader('Content-Type', 'application/json');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
