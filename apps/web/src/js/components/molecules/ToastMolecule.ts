@@ -38,7 +38,7 @@ export class AppleToast {
     el.style.borderRadius = '980px';
     el.style.background = 'rgba(28, 28, 30, 0.88)';
     el.style.backdropFilter = 'blur(24px) saturate(180%)';
-    el.style.webkitBackdropFilter = 'blur(24px) saturate(180%)';
+    el.style.setProperty('-webkit-backdrop-filter', 'blur(24px) saturate(180%)');
     el.style.border = '1px solid rgba(255, 255, 255, 0.16)';
     el.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3)';
     el.style.transform = 'translateY(-20px) scale(0.9)';
