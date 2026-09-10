@@ -111,6 +111,109 @@ export class OpcodeScramblerService {
   }
 
   /**
+   * Linear, ReDoS-safe scanner to count Python string literals in source code.
+   * Runs in strictly O(N) time with zero regex backtracking.
+   */
+  private static countPythonStrings(code: string): number {
+    let count = 0;
+    let i = 0;
+    const len = code.length;
+    while (i < len) {
+      const ch = code[i];
+      if (ch === '#') {
+        i++;
+        while (i < len && code[i] !== '\n') {
+          i++;
+        }
+        continue;
+      }
+      if (ch === '"' || ch === "'") {
+        const quote = ch;
+        // Check for triple quotes
+        if (i + 2 < len && code[i + 1] === quote && code[i + 2] === quote) {
+          count++;
+          i += 3;
+          while (i < len) {
+            if (code[i] === '\\') {
+              i += 2;
+            } else if (code[i] === quote && i + 2 < len && code[i + 1] === quote && code[i + 2] === quote) {
+              i += 3;
+              break;
+            } else {
+              i++;
+            }
+          }
+        } else {
+          count++;
+          i++;
+          while (i < len) {
+            if (code[i] === '\\') {
+              i += 2;
+            } else if (code[i] === quote || code[i] === '\n') {
+              i++;
+              break;
+            } else {
+              i++;
+            }
+          }
+        }
+      } else {
+        i++;
+      }
+    }
+    return count;
+  }
+
+  /**
+   * Linear, ReDoS-safe scanner to count list and dict collection literals.
+   * Runs in strictly O(N) time with zero regex backtracking.
+   */
+  private static countCollectionLiterals(code: string): { listCount: number; dictCount: number } {
+    let listCount = 0;
+    let dictCount = 0;
+    let i = 0;
+    const len = code.length;
+
+    while (i < len) {
+      const ch = code[i];
+      if (ch === '[') {
+        i++;
+        while (i < len) {
+          if (code[i] === ']') {
+            listCount++;
+            i++;
+            break;
+          } else if (code[i] === '[' || code[i] === '\n') {
+            break;
+          }
+          i++;
+        }
+      } else if (ch === '{') {
+        i++;
+        let hasColon = false;
+        while (i < len) {
+          if (code[i] === ':') {
+            hasColon = true;
+          } else if (code[i] === '}') {
+            if (hasColon) {
+              dictCount++;
+            }
+            i++;
+            break;
+          } else if (code[i] === '{' || code[i] === '\n') {
+            break;
+          }
+          i++;
+        }
+      } else {
+        i++;
+      }
+    }
+
+    return { listCount, dictCount };
+  }
+
+  /**
    * Calculates comprehensive statistical breakdown of standard Python bytecode instructions
    * versus custom virtualized opcode frequency cycles in the 3-Layer Onion Virtual Machine.
    */
@@ -123,13 +226,13 @@ export class OpcodeScramblerService {
     const code = sourceCode || '';
 
     // Standard Python Bytecode pattern counters
-    // 1. Strings (single, double, triple-quoted)
-    const stringMatches = code.match(/("""[\s\S]*?"""|'''[\s\S]*?'''|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')/g) || [];
+    // 1. Strings (single, double, triple-quoted) - parsed linearly in O(N) without ReDoS
+    const stringCount = this.countPythonStrings(code);
     // 2. Numbers (decimal, float, hex)
     const numberMatches = code.match(/\b(0x[0-9a-fA-F]+|\d+(?:\.\d+)?)\b/g) || [];
     // 3. Booleans and None
     const boolMatches = code.match(/\b(True|False|None)\b/g) || [];
-    const totalConstants = Math.max(2, stringMatches.length + numberMatches.length + boolMatches.length + 1);
+    const totalConstants = Math.max(2, stringCount + numberMatches.length + boolMatches.length + 1);
 
     // 4. Assignments (STORE_NAME / STORE_FAST)
     const assignmentMatches = code.match(/\b([a-zA-Z_]\w*)\s*=(?!=)/g) || [];
@@ -174,9 +277,8 @@ export class OpcodeScramblerService {
     const callMatches = (code.match(/\b[a-zA-Z_]\w*\s*\(/g) || []).length;
     const returnMatches = (code.match(/\breturn\b/g) || []).length;
 
-    // 11. Collections
-    const listMatches = (code.match(/\[[^\]]*\]/g) || []).length;
-    const dictMatches = (code.match(/\{[^}]*:[^}]*\}/g) || []).length;
+    // 11. Collections - parsed linearly in O(N) without ReDoS
+    const { listCount: listMatches, dictCount: dictMatches } = this.countCollectionLiterals(code);
 
     // 12. Imports
     const importNameMatches = (code.match(/\bimport\s+([a-zA-Z_]\w*)/g) || []).length;

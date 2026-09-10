@@ -236,7 +236,7 @@ if __name__ == "__main__":
     this.fileBadgeLabel = document.createElement('span');
     this.fileBadgeLabel.className = 'o-editor-workspace__file-badge';
     this.fileBadgeLabel.id = 'pyvm-file-badge-pill';
-    this.fileBadgeLabel.innerHTML = `📄 ${this.currentFileName} • 840 B • 35 lines`;
+    this.fileBadgeLabel.textContent = `📄 ${this.currentFileName} • 840 B • 35 lines`;
     fileMetaWrap.appendChild(this.fileBadgeLabel);
 
     // Live Stat Strip
@@ -392,7 +392,7 @@ if __name__ == "__main__":
 
   private updateFileMeta(name: string, sizeBytes: number, lines: number) {
     const sizeStr = sizeBytes < 1024 ? `${sizeBytes} B` : `${(sizeBytes / 1024).toFixed(1)} KB`;
-    this.fileBadgeLabel.innerHTML = `📄 ${name} • ${sizeStr} • ${lines} lines`;
+    this.fileBadgeLabel.textContent = `📄 ${name} • ${sizeStr} • ${lines} lines`;
   }
 
   public getProtectedFileName(): string {

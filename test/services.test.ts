@@ -102,3 +102,37 @@ print(add(10, 20))
   assert.ok(result.securityAudit.decompilerResistanceScore >= 99, 'Decompiler resistance score should be high');
   assert.equal(result.securityAudit.antiTamperScore, 100);
 });
+
+test('OpcodeScramblerService: calculateOpcodeFrequencyStats handles strings, collections, and ReDoS adversarial inputs in linear time', () => {
+  const seed = 12345;
+  const table = OpcodeScramblerService.generateScrambledOpcodeTable(seed, 'polymorphic_hybrid', true);
+
+  const code = `
+# Comment with "quotes"
+msg = "hello world"
+doc = """multi
+line
+string"""
+data = [1, 2, 3]
+config = {'a': 1, 'b': 2}
+`;
+  const stats = OpcodeScramblerService.calculateOpcodeFrequencyStats(code, { cffDegree: 'aggressive' } as any, table.mappings);
+  assert.ok(stats.customTotalCount > 0);
+  assert.ok(stats.virtualizationExpansionRatio > 1);
+
+  // Adversarial ReDoS inputs that would trigger backtracking in naive regexes
+  const adversarialQuotes = '"' + '\\"'.repeat(5000);
+  const adversarialBraces = '{:' + ':'.repeat(5000);
+  const adversarialSingleQuotes = "'''" + "\\'".repeat(5000);
+
+  const t0 = Date.now();
+  const adversarialStats = OpcodeScramblerService.calculateOpcodeFrequencyStats(
+    adversarialQuotes + '\n' + adversarialBraces + '\n' + adversarialSingleQuotes,
+    { cffDegree: 'standard' } as any,
+    table.mappings
+  );
+  const elapsedMs = Date.now() - t0;
+  assert.ok(elapsedMs < 100, `Adversarial input should finish in <100ms, took ${elapsedMs}ms`);
+  assert.ok(adversarialStats);
+});
+

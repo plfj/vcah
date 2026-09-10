@@ -47,16 +47,46 @@ export class AppleToast {
     el.style.fontFamily = '-apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif';
 
     const iconColor = opts.variant === 'success' ? '#30D158' : opts.variant === 'error' ? '#FF453A' : '#0071E3';
-    
-    el.innerHTML = `
-      <div style="width: 22px; height: 22px; border-radius: 50%; background: ${iconColor}; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: bold; flex-shrink: 0; box-shadow: 0 0 10px ${iconColor}66;">
-        ${opts.variant === 'success' ? '✓' : opts.variant === 'error' ? '!' : ''}
-      </div>
-      <div style="display: flex; flex-direction: column; gap: 1px;">
-        <span style="font-size: 0.8125rem; font-weight: 600; color: #F5F5F7; letter-spacing: -0.01em;">${opts.title}</span>
-        <span style="font-size: 0.75rem; color: #86868B; letter-spacing: -0.01em;">${opts.message}</span>
-      </div>
-    `;
+    const iconSymbol = opts.variant === 'success' ? '✓' : opts.variant === 'error' ? '!' : '';
+
+    const iconBadge = document.createElement('div');
+    iconBadge.style.width = '22px';
+    iconBadge.style.height = '22px';
+    iconBadge.style.borderRadius = '50%';
+    iconBadge.style.background = iconColor;
+    iconBadge.style.display = 'flex';
+    iconBadge.style.alignItems = 'center';
+    iconBadge.style.justifyContent = 'center';
+    iconBadge.style.color = 'white';
+    iconBadge.style.fontSize = '12px';
+    iconBadge.style.fontWeight = 'bold';
+    iconBadge.style.flexShrink = '0';
+    iconBadge.style.boxShadow = `0 0 10px ${iconColor}66`;
+    iconBadge.textContent = iconSymbol;
+
+    const textGroup = document.createElement('div');
+    textGroup.style.display = 'flex';
+    textGroup.style.flexDirection = 'column';
+    textGroup.style.gap = '1px';
+
+    const titleSpan = document.createElement('span');
+    titleSpan.style.fontSize = '0.8125rem';
+    titleSpan.style.fontWeight = '600';
+    titleSpan.style.color = '#F5F5F7';
+    titleSpan.style.letterSpacing = '-0.01em';
+    titleSpan.textContent = opts.title;
+
+    const msgSpan = document.createElement('span');
+    msgSpan.style.fontSize = '0.75rem';
+    msgSpan.style.color = '#86868B';
+    msgSpan.style.letterSpacing = '-0.01em';
+    msgSpan.textContent = opts.message;
+
+    textGroup.appendChild(titleSpan);
+    textGroup.appendChild(msgSpan);
+
+    el.appendChild(iconBadge);
+    el.appendChild(textGroup);
 
     parent.appendChild(el);
 
