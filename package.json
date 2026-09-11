@@ -18,7 +18,7 @@
     "@nestjs/common": "^11.2.3",
     "@nestjs/core": "^11.2.3",
     "@nestjs/platform-express": "^11.2.3",
-    "@types/node": "^24.13.3",
+    "@types/node": "^26.5.0",
     "autoprefixer": "^10.4.21",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
