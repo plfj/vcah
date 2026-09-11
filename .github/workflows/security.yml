@@ -45,6 +45,12 @@ jobs:
       - name: Install cargo-audit
         run: cargo install cargo-audit || true
 
+      - name: Ensure Cargo Lockfile Exists
+        run: |
+          if [ ! -f "crates/rust_vm_core/Cargo.lock" ]; then
+            cargo generate-lockfile --manifest-path crates/rust_vm_core/Cargo.toml
+          fi
+
       - name: Run Security Audit on Rust Crates
         run: cargo audit --file crates/rust_vm_core/Cargo.lock || echo "Cargo lockfile scan completed"
         continue-on-error: true
