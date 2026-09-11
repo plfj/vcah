@@ -134,5 +134,15 @@ config = {'a': 1, 'b': 2}
   const elapsedMs = Date.now() - t0;
   assert.ok(elapsedMs < 100, `Adversarial input should finish in <100ms, took ${elapsedMs}ms`);
   assert.ok(adversarialStats);
+
+  // Adversarial loop-bound injection payload (e.g. JSON object with { length: 1e100 })
+  const fakeObjectPayload = { length: 1e100 } as any;
+  const loopBoundSafeStats = OpcodeScramblerService.calculateOpcodeFrequencyStats(
+    fakeObjectPayload,
+    { cffDegree: 'standard' } as any,
+    table.mappings
+  );
+  assert.ok(loopBoundSafeStats);
+  assert.equal(loopBoundSafeStats.standardTotalCount >= 0, true);
 });
 

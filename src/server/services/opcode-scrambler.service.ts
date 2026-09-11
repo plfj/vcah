@@ -110,14 +110,21 @@ export class OpcodeScramblerService {
     return { mappings, opcodeTableDict, reverseTableDict };
   }
 
+  /** Maximum source code length allowed for linear AST/pattern scanning to prevent loop bound injection */
+  private static readonly MAX_SCAN_LENGTH = 1_000_000;
+
   /**
    * Linear, ReDoS-safe scanner to count Python string literals in source code.
    * Runs in strictly O(N) time with zero regex backtracking.
+   * Enforces type-safety and strict upper-bound limits to prevent loop bound injection.
    */
-  private static countPythonStrings(code: string): number {
+  private static countPythonStrings(code: unknown): number {
+    if (typeof code !== 'string') {
+      return 0;
+    }
     let count = 0;
     let i = 0;
-    const len = code.length;
+    const len = Math.min(code.length, OpcodeScramblerService.MAX_SCAN_LENGTH);
     while (i < len) {
       const ch = code[i];
       if (ch === '#') {
@@ -167,12 +174,16 @@ export class OpcodeScramblerService {
   /**
    * Linear, ReDoS-safe scanner to count list and dict collection literals.
    * Runs in strictly O(N) time with zero regex backtracking.
+   * Enforces type-safety and strict upper-bound limits to prevent loop bound injection.
    */
-  private static countCollectionLiterals(code: string): { listCount: number; dictCount: number } {
+  private static countCollectionLiterals(code: unknown): { listCount: number; dictCount: number } {
+    if (typeof code !== 'string') {
+      return { listCount: 0, dictCount: 0 };
+    }
     let listCount = 0;
     let dictCount = 0;
     let i = 0;
-    const len = code.length;
+    const len = Math.min(code.length, OpcodeScramblerService.MAX_SCAN_LENGTH);
 
     while (i < len) {
       const ch = code[i];
@@ -223,7 +234,10 @@ export class OpcodeScramblerService {
     baseMappings: OpcodeMapping[],
     chunkCount: number = 4
   ): OpcodeFrequencyStats & { mappings: OpcodeMapping[] } {
-    const code = sourceCode || '';
+    const rawCode = typeof sourceCode === 'string' ? sourceCode : '';
+    const code = rawCode.length > OpcodeScramblerService.MAX_SCAN_LENGTH
+      ? rawCode.slice(0, OpcodeScramblerService.MAX_SCAN_LENGTH)
+      : rawCode;
 
     // Standard Python Bytecode pattern counters
     // 1. Strings (single, double, triple-quoted) - parsed linearly in O(N) without ReDoS
