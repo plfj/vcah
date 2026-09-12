@@ -31,6 +31,7 @@
     "@tailwindcss/postcss": "4.3.3",
     "@tailwindcss/typography": "^0.5.19",
     "@types/express": "^5.0.6",
+    "@types/node": "^24.13.3",
     "eslint": "^10.10.0",
     "sass": "^1.104.0",
     "tailwindcss": "4.3.3",
