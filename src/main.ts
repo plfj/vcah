@@ -41,7 +41,7 @@ export async function bootstrap(): Promise<NestExpressApplication> {
     return app;
   }
 
-  const port = Number(process.env.PORT) || 3000;
+  const port = 3000;
   await app.listen(port, '0.0.0.0');
   console.log(`[PyVM NestJS Orchestration Engine] Server running on port ${port}`);
   cachedApp = app;

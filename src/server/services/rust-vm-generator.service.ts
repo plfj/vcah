@@ -2,12 +2,13 @@ import { ObfuscationConfig } from '../../../lib/types';
 import { MagicHeaderService } from './magic-header.service';
 import { OpcodeScramblerService } from './opcode-scrambler.service';
 import { EntropyService } from './entropy.service';
+import { LambdaAstMorpherService } from './lambda-ast-morpher.service';
 
 /**
  * Deterministic pseudo-random identifier mangler using CJK Unified Ideographs
- * unicode range: chr(i) for i in range(0x4e00, 0x9fff) with length k=8.
+ * unicode range: chr(i) for i in range(0x4e00, 0x9fff) with length k=5.
  * Equivalent to:
- * ''.join(__import__('random').choices([chr(i) for i in range(0x4e00, 0x9fff)], k=8))
+ * ''.join(__import__('random').choices([chr(i) for i in range(0x4e00, 0x9fff)], k=5))
  * Produces valid Python 3 non-ASCII identifiers (PEP 3131) that heavily impede static analysis.
  */
 class IdentifierMangler {
@@ -33,7 +34,7 @@ class IdentifierMangler {
 
     while (true) {
       let name = '';
-      for (let i = 0; i < 8; i++) {
+      for (let i = 0; i < 5; i++) {
         const charCode = minCode + (this.nextRand() % rangeSpan);
         name += String.fromCharCode(charCode);
       }
@@ -319,9 +320,14 @@ export class RustVmGeneratorService {
       config.opcodeScrambling ?? true
     );
 
+    // 1b. Morph source code via Pre-VM Lambda AST transformation if enabled
+    const processedSource = (config.preVmLambdaAst !== false)
+      ? LambdaAstMorpherService.morphSource(sourceCode, { loop: 1, seed: config.opcodeSeed })
+      : sourceCode;
+
     // 2. Encode source code into authentic 3-layer nested onion bytecode payload
     const { bytes: directBytecodeBytes, chunkCount, w1Hex, w2Hex } = this.encodeMultiLayerBytecodePayload(
-      sourceCode,
+      processedSource,
       magicHex,
       config.stringEncryptionKey,
       config.targetOutputSizeMb || 0,
@@ -330,7 +336,7 @@ export class RustVmGeneratorService {
 
     // 2b. Calculate comprehensive opcode frequency breakdown (Standard CPython vs Custom Scrambled ISA)
     const opcodeFrequencyStats = OpcodeScramblerService.calculateOpcodeFrequencyStats(
-      sourceCode,
+      processedSource,
       config,
       mappings,
       chunkCount
@@ -351,17 +357,22 @@ export class RustVmGeneratorService {
 
     // Ultra-Hidden Dynamic Reflection Module Loader (Zero plain 'import' statements in output)
     const hiddenImports = (config.hideImports !== false)
-      ? `${m.sym('__bi')} = globals().get('__builtins__', {})
-${m.sym('__bi_dict')} = ${m.sym('__bi')} if isinstance(${m.sym('__bi')}, dict) else getattr(${m.sym('__bi')}, '__dict__', {})
-${m.sym('__dyn_imp')} = ${m.sym('__bi_dict')}.get("".join(chr(c ^ 0x5A) for c in [45, 45, 51, 55, 42, 53, 40, 46, 45, 45]))
-if ${m.sym('__dyn_imp')} is None:
-    ${m.sym('__dyn_imp')} = getattr(__builtins__, "".join(chr(c ^ 0x5A) for c in [45, 45, 51, 55, 42, 53, 40, 46, 45, 45]), None)
-${m.sym('sys')} = ${m.sym('__dyn_imp')}("".join(chr(c ^ 0x2A) for c in [73, 83, 73]))
-${m.sym('os')} = ${m.sym('__dyn_imp')}("".join(chr(c ^ 0x1B) for c in [116, 104]))
-${m.sym('platform')} = ${m.sym('__dyn_imp')}("".join(chr(c ^ 0x47) for c in [55, 43, 38, 51, 33, 40, 53, 42]))
-${m.sym('struct')} = ${m.sym('__dyn_imp')}("".join(chr(c ^ 0x3C) for c in [79, 72, 78, 73, 95, 72]))
-${m.sym('time')} = ${m.sym('__dyn_imp')}("".join(chr(c ^ 0x62) for c in [22, 11, 15, 7]))
-${m.sym('ctypes')} = ${m.sym('__dyn_imp')}("".join(chr(c ^ 0x51) for c in [50, 37, 40, 33, 52, 34]))`
+      ? `${m.sym('__bi')} = (lambda a:(lambda b:(lambda c:(lambda d:d.get(''.join(map(chr,(95,95,98,117,105,108,116,105,110,115,95,95))),{}))(vars(c.modules['builtins'])))(b('sys')))(a['__import__']))(vars(globals()['__builtins__']) if hasattr(globals()['__builtins__'], '__dict__') else globals()['__builtins__'])
+${m.sym('__bi_dict')} = ${m.sym('__bi')} if (isinstance(${m.sym('__bi')}, dict) and len(${m.sym('__bi')}) > 0) else getattr(__builtins__, '__dict__', vars(__builtins__) if hasattr(__builtins__, '__dict__') else __builtins__)
+${m.sym('__dyn_imp')} = (lambda _bi, _gl: (
+    _bi.get(''.join(map(chr, (95, 95, 105, 109, 112, 111, 114, 116, 95, 95))))
+    if (isinstance(_bi, dict) and ''.join(map(chr, (95, 95, 105, 109, 112, 111, 114, 116, 95, 95))) in _bi)
+    else (
+        getattr(__builtins__, ''.join(map(chr, (95, 95, 105, 109, 112, 111, 114, 116, 95, 95))), None)
+        or (_gl['__builtins__']['__import__'] if isinstance(_gl.get('__builtins__'), dict) and '__import__' in _gl.get('__builtins__') else getattr(_gl.get('__builtins__'), '__import__', None))
+    )
+))(${m.sym('__bi_dict')}, globals())
+${m.sym('sys')} = (lambda _f: (lambda _i, _n: _f(_i, _n)))(lambda _imp, _mod: _imp(_mod))(${m.sym('__dyn_imp')}, "".join(map(chr, [115, 121, 115])))
+${m.sym('os')} = (lambda _f: (lambda _i, _n: _f(_i, _n)))(lambda _imp, _mod: _imp(_mod))(${m.sym('__dyn_imp')}, "".join(map(chr, [111, 115])))
+${m.sym('platform')} = (lambda _f: (lambda _i, _n: _f(_i, _n)))(lambda _imp, _mod: _imp(_mod))(${m.sym('__dyn_imp')}, "".join(map(chr, [112, 108, 97, 116, 102, 111, 114, 109])))
+${m.sym('struct')} = (lambda _f: (lambda _i, _n: _f(_i, _n)))(lambda _imp, _mod: _imp(_mod))(${m.sym('__dyn_imp')}, "".join(map(chr, [115, 116, 114, 117, 99, 116])))
+${m.sym('time')} = (lambda _f: (lambda _i, _n: _f(_i, _n)))(lambda _imp, _mod: _imp(_mod))(${m.sym('__dyn_imp')}, "".join(map(chr, [116, 105, 109, 101])))
+${m.sym('ctypes')} = (lambda _f: (lambda _i, _n: _f(_i, _n)))(lambda _imp, _mod: _imp(_mod))(${m.sym('__dyn_imp')}, "".join(map(chr, [99, 116, 121, 112, 101, 115])))`
       : `import sys as ${m.sym('sys')}
 import os as ${m.sym('os')}
 import platform as ${m.sym('platform')}
@@ -379,73 +390,33 @@ ${m.sym('trap')} = (
     "\\x00\\xFF\\xFE\\xAA\\x55\\x1B" * 32
 )
 
-def ${m.sym('mba_invar_1')}(${m.sym('p_x')}, ${m.sym('p_y')}):
-    return ((${m.sym('p_x')} ^ ${m.sym('p_y')}) + 2 * (${m.sym('p_x')} & ${m.sym('p_y')})) == (${m.sym('p_x')} + ${m.sym('p_y')})
+${m.sym('bw_xor')} = (lambda _f: (lambda _g: (lambda _h: lambda _a, _b: _f(_g(_h(_a, _b))))))(lambda _r: _r)(lambda _v: _v)(lambda _a, _b: _a ^ _b)
+${m.sym('mba_invar_1')} = (lambda _f: (lambda _g: (lambda _h: lambda _x, _y: _f(_g(_h(_x, _y))))))(lambda _r: _r)(lambda _v: _v)(lambda _x, _y: ((${m.sym('bw_xor')}(_x, _y) + 2 * (_x & _y)) == (_x + _y)))
+${m.sym('mba_invar_2')} = (lambda _f: (lambda _g: (lambda _h: lambda _z: _f(_g(_h(_z))))))(lambda _r: _r)(lambda _v: _v)(lambda _z: ((_z | ~_z) & 0xFFFFFFFF) == 0xFFFFFFFF)
+${m.sym('mba_invar_3')} = (lambda _f: (lambda _g: (lambda _h: lambda _u, _v: _f(_g(_h(_u, _v))))))(lambda _r: _r)(lambda _v: _v)(lambda _u, _v: ((_u | _v) - (_u & ~_v)) == _v)
 
-def ${m.sym('mba_invar_2')}(${m.sym('p_z')}):
-    return ((${m.sym('p_z')} | ~${m.sym('p_z')}) & 0xFFFFFFFF) == 0xFFFFFFFF
+${m.sym('bw_add')} = (lambda _f: (lambda _g: (lambda _h: lambda _a, _b: _f(_g(_h(_a, _b))))))(lambda _r: _r)(lambda _v: _v)(lambda _a, _b: ((_a ^ _b) + 2 * (_a & _b)))
+${m.sym('bw_sub')} = (lambda _f: (lambda _g: (lambda _h: lambda _a, _b: _f(_g(_h(_a, _b))))))(lambda _r: _r)(lambda _v: _v)(lambda _a, _b: ((_a ^ ~_b) + 2 * (_a & ~_b) + 1))
+${m.sym('bw_mul')} = (lambda _f: (lambda _g: (lambda _h: lambda _a, _b: _f(_g(_h(_a, _b))))))(lambda _r: _r)(lambda _v: _v)(lambda _a, _b: _a * _b)
+${m.sym('bw_rol')} = (lambda _f: (lambda _g: lambda _v, _s, _b=32: _f(_g(_v, _s % _b, _b))))(lambda _r: _r)(lambda _v, _s, _b: ((_v << _s) | (_v >> (_b - _s))) & ((1 << _b) - 1))
+${m.sym('bw_ror')} = (lambda _f: (lambda _g: lambda _v, _s, _b=32: _f(_g(_v, _s % _b, _b))))(lambda _r: _r)(lambda _v, _s, _b: ((_v >> _s) | (_v << (_b - _s))) & ((1 << _b) - 1))
 
-def ${m.sym('mba_invar_3')}(${m.sym('p_u')}, ${m.sym('p_v')}):
-    return ((${m.sym('p_u')} | ${m.sym('p_v')}) - (${m.sym('p_u')} & ~${m.sym('p_v')})) == ${m.sym('p_v')}
-
-def ${m.sym('bw_add')}(${m.sym('p_a')}, ${m.sym('p_b')}):
-    while ${m.sym('p_b')}:
-        ${m.sym('v_c')} = (${m.sym('p_a')} & ${m.sym('p_b')}) << 1
-        ${m.sym('p_a')} = ${m.sym('p_a')} ^ ${m.sym('p_b')}
-        ${m.sym('p_b')} = ${m.sym('v_c')}
-    return ${m.sym('p_a')}
-
-def ${m.sym('bw_sub')}(${m.sym('p_a')}, ${m.sym('p_b')}):
-    return ${m.sym('bw_add')}(${m.sym('p_a')}, ${m.sym('bw_add')}(~${m.sym('p_b')}, 1))
-
-def ${m.sym('bw_xor')}(${m.sym('p_a')}, ${m.sym('p_b')}):
-    return ${m.sym('p_a')} ^ ${m.sym('p_b')}
-
-def ${m.sym('bw_mul')}(${m.sym('p_a')}, ${m.sym('p_b')}):
-    ${m.sym('v_res')} = 0
-    ${m.sym('v_neg')} = False
-    if ${m.sym('p_a')} < 0: ${m.sym('p_a')}, ${m.sym('v_neg')} = -${m.sym('p_a')}, not ${m.sym('v_neg')}
-    if ${m.sym('p_b')} < 0: ${m.sym('p_b')}, ${m.sym('v_neg')} = -${m.sym('p_b')}, not ${m.sym('v_neg')}
-    while ${m.sym('p_b')} > 0:
-        if ${m.sym('p_b')} & 1: ${m.sym('v_res')} = ${m.sym('bw_add')}(${m.sym('v_res')}, ${m.sym('p_a')})
-        ${m.sym('p_a')} <<= 1
-        ${m.sym('p_b')} >>= 1
-    return -${m.sym('v_res')} if ${m.sym('v_neg')} else ${m.sym('v_res')}
-
-def ${m.sym('bw_rol')}(${m.sym('p_v')}, ${m.sym('p_s')}, ${m.sym('p_b')}=32):
-    ${m.sym('p_s')} = ${m.sym('p_s')} % ${m.sym('p_b')}
-    return ((${m.sym('p_v')} << ${m.sym('p_s')}) | (${m.sym('p_v')} >> (${m.sym('p_b')} - ${m.sym('p_s')}))) & ((1 << ${m.sym('p_b')}) - 1)
-
-def ${m.sym('bw_ror')}(${m.sym('p_v')}, ${m.sym('p_s')}, ${m.sym('p_b')}=32):
-    ${m.sym('p_s')} = ${m.sym('p_s')} % ${m.sym('p_b')}
-    return ((${m.sym('p_v')} >> ${m.sym('p_s')}) | (${m.sym('p_v')} << (${m.sym('p_b')} - ${m.sym('p_s')}))) & ((1 << ${m.sym('p_b')}) - 1)
-
-def ${m.sym('invar_alpha')}(${m.sym('p_x')}):
-    return ((${m.sym('p_x')} * (${m.sym('p_x')} + 1)) & 1) == 0
-
-def ${m.sym('invar_beta')}(${m.sym('p_m')}):
-    return ((${m.sym('p_m')} | ~${m.sym('p_m')}) & 0xFFFFFFFF) == 0xFFFFFFFF
-
-def ${m.sym('invar_gamma')}(${m.sym('p_a')}, ${m.sym('p_b')}):
-    return ((${m.sym('p_a')} ^ ${m.sym('p_b')}) + 2 * (${m.sym('p_a')} & ${m.sym('p_b')})) == (${m.sym('p_a')} + ${m.sym('p_b')})
-
-def ${m.sym('invar_delta')}(${m.sym('p_n')}):
-    return ((7 * (${m.sym('p_n')} ** 2) + 1) % 7) != 0
-
-def ${m.sym('invar_epsilon')}(${m.sym('p_v')}):
-    return ((${m.sym('p_v')} ^ ~${m.sym('p_v')}) + 1) == 0
+${m.sym('invar_alpha')} = (lambda _f: (lambda _g: (lambda _h: lambda _x: _f(_g(_h(_x))))))(lambda _r: _r)(lambda _v: _v)(lambda _x: ((_x * (_x + 1)) & 1) == 0)
+${m.sym('invar_beta')} = (lambda _f: (lambda _g: (lambda _h: lambda _m: _f(_g(_h(_m))))))(lambda _r: _r)(lambda _v: _v)(lambda _m: ((_m | ~_m) & 0xFFFFFFFF) == 0xFFFFFFFF)
+${m.sym('invar_gamma')} = (lambda _f: (lambda _g: (lambda _h: lambda _a, _b: _f(_g(_h(_a, _b))))))(lambda _r: _r)(lambda _v: _v)(lambda _a, _b: ((_a ^ _b) + 2 * (_a & _b)) == (_a + _b))
+${m.sym('invar_delta')} = (lambda _f: (lambda _g: (lambda _h: lambda _n: _f(_g(_h(_n))))))(lambda _r: _r)(lambda _v: _v)(lambda _n: ((7 * (_n ** 2) + 1) % 7) != 0)
+${m.sym('invar_epsilon')} = (lambda _f: (lambda _g: (lambda _h: lambda _v: _f(_g(_h(_v))))))(lambda _r: _r)(lambda _v: _v)(lambda _v: ((_v ^ ~_v) + 1) == 0)
 
 def ${m.sym('calc_witness')}(${m.sym('p_bytes')}, ${m.sym('p_seed')}=0x5A5A5A5A):
     ${m.sym('v_w')} = ${m.sym('p_seed')}
     for ${m.sym('v_b')} in ${m.sym('p_bytes')}:
-        ${m.sym('v_w')} = ((${m.sym('v_w')} << 7) - ${m.sym('v_w')} + ${m.sym('v_b')} + 0x9E3779B9) & 0xFFFFFFFF
+        ${m.sym('v_w')} = (lambda _acc, _b: (((_acc << 7) - _acc + _b + 0x9E3779B9) & 0xFFFFFFFF))(${m.sym('v_w')}, ${m.sym('v_b')})
     return ${m.sym('v_w')}
+${m.sym('calc_witness')} = (lambda _fn: lambda _bytes, _seed=0x5A5A5A5A: _fn(_bytes, _seed))(${m.sym('calc_witness')})
 
-def ${m.sym('derive_key')}(${m.sym('p_base')}, ${m.sym('p_salt')}):
-    ${m.sym('v_kb')} = bytearray((${m.sym('p_base')} + ${m.sym('p_salt')}).encode('utf-8'))
-    if len(${m.sym('v_kb')}) < 32:
-        ${m.sym('v_kb')}.extend(b'\\x5B' * (32 - len(${m.sym('v_kb')})))
-    return bytes(${m.sym('v_kb')}[:32])
+${m.sym('derive_key')} = (lambda _deriver: lambda _base, _salt: _deriver(_base, _salt))(
+    lambda _base, _salt: (lambda _kb: bytes((_kb + b'\\x5B' * max(0, 32 - len(_kb)))[:32]))(bytearray((_base + _salt).encode('utf-8')))
+)
 
 class ${m.sym('cls_kernel_def')}:
     @staticmethod
@@ -822,7 +793,7 @@ class Interpretor:
 Interpreter = Interpretor
 RustVMInterpretor = Interpretor
 RustNativeInterpretor = Interpretor
-Interpretor(globals(), ${directBytecodeLiteral})
+(lambda _run: _run())(lambda: Interpretor(globals(), ${directBytecodeLiteral}))
 `;
 
     const originalSize = new TextEncoder().encode(sourceCode).length;

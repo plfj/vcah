@@ -25,13 +25,13 @@ export async function bootstrap() {
     app.useStaticAssets(webDistPath);
   }
 
-  const port = Number(process.env.PORT) || 3000;
+  const port = 3000;
   await app.listen(port, '0.0.0.0');
   console.log(`[PyVM NestJS Orchestration Engine] Server running on port ${port}`);
   return app;
 }
 
-if (require.main === module || process.env.AUTO_BOOTSTRAP_API !== 'false') {
+if (require.main === module) {
   bootstrap().catch((err) => {
     console.error('[NestJS Bootstrap Error]', err);
   });

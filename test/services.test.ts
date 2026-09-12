@@ -146,3 +146,37 @@ config = {'a': 1, 'b': 2}
   assert.equal(loopBoundSafeStats.standardTotalCount >= 0, true);
 });
 
+test('LambdaAstMorpherService: transforms Python AST with nested lambdas, match-case, and try-catch', () => {
+  const { LambdaAstMorpherService } = require('../src/server/services/lambda-ast-morpher.service');
+  const sample = 'x = 100\nmsg = "hello"\nprint(x, msg)';
+  const morphed = LambdaAstMorpherService.morphSource(sample, { loop: 1 });
+  assert.ok(morphed.length > sample.length);
+  assert.ok(morphed.includes('lambda a:'));
+  assert.ok(morphed.includes('MemoryError'));
+  assert.ok(morphed.includes('match '));
+  assert.ok(morphed.includes('3333333333333333333333333333333333333333333333333333333333242422222222222222222722222233'), 'Must use user constant in obfstr');
+  assert.ok(morphed.includes('0xFFFFFFFFFFFFFFFFFFFFFF') || morphed.includes('309485009821345068724781056'), 'Must use 0xFFFFFFFFFFFFFFFFFFFFFF in obfint');
+  // Verify user's exact unicode identifiers
+  assert.ok(morphed.includes('tryᅠ'), 'Must include tryᅠ identifier for print');
+  assert.ok(morphed.includes('exceptᅠ'), 'Must include exceptᅠ identifier for input');
+  assert.ok(morphed.includes('0x4e00') || /[\u4e00-\u9fff]/.test(morphed), 'Must generate CJK identifiers in range 0x4e00..0x9fff');
+});
+
+test('RustVmGeneratorService: output layer uses user requested lambda builtins resolver and nested lambdas', () => {
+  const sampleCode = 'print("hello protected world")';
+  const result = RustVmGeneratorService.generateSingleObfuscatedFile(sampleCode, {
+    magicNumber: '7F50564D',
+    opcodeSeed: 42,
+    hideImports: true,
+    preVmLambdaAst: true,
+  } as any);
+
+  // User requested builtins resolver lambda
+  const expectedLambdaBuiltinsPattern = "lambda a:(lambda b:(lambda c:(lambda d:d.get(''.join(map(chr,(95,95,98,117,105,108,116,105,110,115,95,95))),{}))(vars(c.modules['builtins'])))(b('sys')))(a['__import__'])";
+  assert.ok(result.obfuscatedCode.includes(expectedLambdaBuiltinsPattern), 'Must include user requested builtins resolver lambda');
+
+  // Heavily nested lambdas in output layer
+  assert.ok(result.obfuscatedCode.includes('(lambda _f: (lambda _g: (lambda _h:'), 'Output layer functions must use nested curried lambdas');
+  assert.ok(result.obfuscatedCode.includes('(lambda _run: _run())(lambda: Interpretor(globals(), b\''), 'Entrypoint must be curried with lambda');
+});
+
