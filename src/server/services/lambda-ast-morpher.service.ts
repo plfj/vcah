@@ -1,5 +1,3 @@
-import { spawnSync } from 'node:child_process';
-
 export interface LambdaAstMorpherOptions {
   loop?: number;
   seed?: number;
@@ -273,19 +271,50 @@ morphed = header + '\\n' + ast.unparse(tree)
 sys.stdout.write(morphed)
 `;
 
-      const proc = spawnSync('python3', ['-c', pythonScript], {
-        input: sourceCode,
-        encoding: 'utf-8',
-        maxBuffer: 10 * 1024 * 1024,
-      });
-
-      if (proc.status === 0 && proc.stdout && proc.stdout.trim().length > 0) {
-        return proc.stdout;
+      const output = this.executePythonProcess(pythonScript, sourceCode);
+      if (output && output.trim().length > 0) {
+        return output;
       }
     } catch {
       // Gracefully fall back to original source code if Python transformation fails
     }
 
     return sourceCode;
+  }
+
+  private static executePythonProcess(script: string, input: string): string | null {
+    try {
+      let cp: any = null;
+      if (typeof require !== 'undefined') {
+        try {
+          cp = require('child_process');
+        } catch {
+          // ignore
+        }
+      }
+      if (!cp) {
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-implied-eval
+          const dynamicRequire = new Function('mod', 'return require(mod)');
+          cp = dynamicRequire('child_process');
+        } catch {
+          // ignore
+        }
+      }
+
+      if (cp && typeof cp.spawnSync === 'function') {
+        const proc = cp.spawnSync('python3', ['-c', script], {
+          input,
+          encoding: 'utf-8',
+          maxBuffer: 10 * 1024 * 1024,
+        });
+        if (proc && proc.status === 0 && proc.stdout && proc.stdout.trim().length > 0) {
+          return proc.stdout;
+        }
+      }
+    } catch {
+      // Process execution not supported in current environment
+    }
+    return null;
   }
 }
