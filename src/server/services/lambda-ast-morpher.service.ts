@@ -1,3 +1,5 @@
+declare const module: any;
+
 export interface LambdaAstMorpherOptions {
   loop?: number;
   seed?: number;
@@ -285,25 +287,27 @@ sys.stdout.write(morphed)
   private static executePythonProcess(script: string, input: string): string | null {
     try {
       let cp: any = null;
-      if (typeof require !== 'undefined') {
-        try {
-          cp = require('child_process');
-        } catch {
-          // ignore
+
+      try {
+        const procObj: any = typeof process !== 'undefined' ? process : (globalThis as any).process;
+        if (procObj && typeof procObj.getBuiltinModule === 'function') {
+          cp = procObj.getBuiltinModule('child_process');
         }
+      } catch {
+        // ignore
       }
-      if (!cp) {
+
+      if (!cp && typeof module !== 'undefined' && typeof module.require === 'function') {
         try {
-          // eslint-disable-next-line @typescript-eslint/no-implied-eval
-          const dynamicRequire = new Function('mod', 'return require(mod)');
-          cp = dynamicRequire('child_process');
+          cp = module.require('child_process');
         } catch {
           // ignore
         }
       }
 
-      if (cp && typeof cp.spawnSync === 'function') {
-        const proc = cp.spawnSync('python3', ['-c', script], {
+      const spawnSyncFn = cp?.spawnSync || cp?.default?.spawnSync;
+      if (typeof spawnSyncFn === 'function') {
+        const proc = spawnSyncFn('python3', ['-c', script], {
           input,
           encoding: 'utf-8',
           maxBuffer: 10 * 1024 * 1024,

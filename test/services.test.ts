@@ -4,6 +4,7 @@ import { MagicHeaderService } from '../src/server/services/magic-header.service'
 import { EntropyService } from '../src/server/services/entropy.service';
 import { OpcodeScramblerService } from '../src/server/services/opcode-scrambler.service';
 import { RustVmGeneratorService } from '../src/server/services/rust-vm-generator.service';
+import { LambdaAstMorpherService } from '../src/server/services/lambda-ast-morpher.service';
 
 test('MagicHeaderService: sanitizeMagicHex cleans, normalizes, and pads inputs', () => {
   assert.equal(MagicHeaderService.sanitizeMagicHex('7F50564D'), '7F50564D');
@@ -147,7 +148,6 @@ config = {'a': 1, 'b': 2}
 });
 
 test('LambdaAstMorpherService: transforms Python AST with nested lambdas, match-case, and try-catch', () => {
-  const { LambdaAstMorpherService } = require('../src/server/services/lambda-ast-morpher.service');
   const sample = 'x = 100\nmsg = "hello"\nprint(x, msg)';
   const morphed = LambdaAstMorpherService.morphSource(sample, { loop: 1 });
   assert.ok(morphed.length > sample.length);
