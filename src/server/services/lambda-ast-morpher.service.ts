@@ -289,7 +289,7 @@ sys.stdout.write(morphed)
       let cp: any = null;
 
       try {
-        const procObj: any = typeof process !== 'undefined' ? process : (globalThis as any).process;
+        const procObj: any = (globalThis as any).process;
         if (procObj && typeof procObj.getBuiltinModule === 'function') {
           cp = procObj.getBuiltinModule('child_process');
         }
@@ -297,9 +297,12 @@ sys.stdout.write(morphed)
         // ignore
       }
 
-      if (!cp && typeof module !== 'undefined' && typeof module.require === 'function') {
+      if (!cp) {
         try {
-          cp = module.require('child_process');
+          const modObj: any = typeof module !== 'undefined' ? module : (globalThis as any).module;
+          if (modObj && typeof modObj.require === 'function') {
+            cp = modObj.require('child_process');
+          }
         } catch {
           // ignore
         }
