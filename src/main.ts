@@ -6,6 +6,9 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { AppModule } from '../apps/api/src/app.module';
 
+declare const require: any;
+declare const module: any;
+
 let cachedApp: NestExpressApplication | null = null;
 
 export async function bootstrap(): Promise<NestExpressApplication> {
