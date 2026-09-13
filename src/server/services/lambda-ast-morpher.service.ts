@@ -11,7 +11,7 @@ export class LambdaAstMorpherService {
    * AST-level string and integer obfuscation, control-flow match-cases,
    * and exception-driven execution.
    */
-  public static morphSource(sourceCode: string, options?: LambdaAstMorpherOptions): string {
+  public static async morphSource(sourceCode: string, options?: LambdaAstMorpherOptions): Promise<string> {
     if (!sourceCode || sourceCode.trim().length === 0) {
       return sourceCode;
     }
@@ -273,54 +273,40 @@ morphed = header + '\\n' + ast.unparse(tree)
 sys.stdout.write(morphed)
 `;
 
-      const output = this.executePythonProcess(pythonScript, sourceCode);
+      const output = await this.executePythonProcess(pythonScript, sourceCode);
       if (output && output.trim().length > 0) {
         return output;
       }
-    } catch {
+    } catch (err) {
+      console.error('AST morphing failed, falling back to original source:', err);
       // Gracefully fall back to original source code if Python transformation fails
     }
 
     return sourceCode;
   }
 
-  private static executePythonProcess(script: string, input: string): string | null {
+  private static async executePythonProcess(script: string, input: string): Promise<string | null> {
     try {
-      let cp: any = null;
+      // Import sandbox service dynamically to avoid circular dependencies
+      const { PythonSandboxService } = await import('./python-sandbox.service');
 
-      try {
-        const procObj: any = (globalThis as any).process;
-        if (procObj && typeof procObj.getBuiltinModule === 'function') {
-          cp = procObj.getBuiltinModule('child_process');
-        }
-      } catch {
-        // ignore
+      const result = await PythonSandboxService.executeSandboxed(script, input, {
+        timeout: 10000, // 10 seconds for AST morphing
+        maxMemoryMB: 512,
+        maxOutputSize: 10 * 1024 * 1024,
+      });
+
+      if (result.success && result.stdout && result.stdout.trim().length > 0) {
+        return result.stdout;
       }
 
-      if (!cp) {
-        try {
-          const modObj: any = typeof module !== 'undefined' ? module : (globalThis as any).module;
-          if (modObj && typeof modObj.require === 'function') {
-            cp = modObj.require('child_process');
-          }
-        } catch {
-          // ignore
-        }
+      // Log failure for debugging
+      if (result.error) {
+        console.error('Python sandbox execution failed:', result.error);
+        console.error('Stderr:', result.stderr);
       }
-
-      const spawnSyncFn = cp?.spawnSync || cp?.default?.spawnSync;
-      if (typeof spawnSyncFn === 'function') {
-        const proc = spawnSyncFn('python3', ['-c', script], {
-          input,
-          encoding: 'utf-8',
-          maxBuffer: 10 * 1024 * 1024,
-        });
-        if (proc && proc.status === 0 && proc.stdout && proc.stdout.trim().length > 0) {
-          return proc.stdout;
-        }
-      }
-    } catch {
-      // Process execution not supported in current environment
+    } catch (err) {
+      console.error('Failed to execute Python process in sandbox:', err);
     }
     return null;
   }

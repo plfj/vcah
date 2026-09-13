@@ -1,0 +1,14 @@
+{
+  "dependencies_to_add": {
+    "class-validator": "^0.14.0",
+    "class-transformer": "^0.5.1",
+    "winston": "^3.11.0"
+  },
+  "scripts_to_add": {
+    "generate-api-key": "ts-node scripts/generate-api-key.ts",
+    "test:security": "npm run build && node scripts/security-test.js",
+    "docker:build": "docker build -t pyvm-atomic .",
+    "docker:run": "docker-compose up -d",
+    "logs": "tail -f logs/combined.log"
+  }
+}
