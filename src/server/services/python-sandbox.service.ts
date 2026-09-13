@@ -1,8 +1,8 @@
-import { spawn, ChildProcess } from 'node:child_process';
-import { randomBytes } from 'node:crypto';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { writeFileSync, unlinkSync, existsSync, mkdirSync } from 'node:fs';
+import { spawn, ChildProcess } from 'child_process';
+import { randomBytes } from 'crypto';
+import { tmpdir } from 'os';
+import { join } from 'path';
+import { writeFileSync, unlinkSync, existsSync, mkdirSync } from 'fs';
 
 /**
  * Secure Python Sandbox Execution Service

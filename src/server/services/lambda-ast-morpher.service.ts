@@ -1,6 +1,19 @@
-import { spawnSync } from 'node:child_process';
-
+declare const require: any;
 declare const module: any;
+
+// Helper to safely obtain spawnSync without compile-time module resolution failures
+function getSpawnSync(): ((command: string, args: string[], options: any) => any) | null {
+  try {
+    if (typeof require !== 'undefined') {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const cp = require('child_process');
+      return cp?.spawnSync || null;
+    }
+  } catch {
+    // Child process not available in serverless/sandboxed environments
+  }
+  return null;
+}
 
 export interface LambdaAstMorpherOptions {
   loop?: number;
@@ -289,7 +302,12 @@ sys.stdout.write(morphed)
 
   private static executePythonProcess(script: string, input: string): string | null {
     try {
-      const res = spawnSync('python3', ['-c', script], {
+      const spawnSyncFn = getSpawnSync();
+      if (!spawnSyncFn) {
+        return null;
+      }
+
+      const res = spawnSyncFn('python3', ['-c', script], {
         input,
         encoding: 'utf-8',
         timeout: 10000,
