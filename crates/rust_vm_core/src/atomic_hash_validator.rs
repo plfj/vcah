@@ -1,12 +1,12 @@
 use sha2::{Sha512, Digest};
-use std::io::{self, Read};
 
 /// ATOMIC PYVM - RUST SHA-512 VALIDATOR
 ///
 /// This Rust module validates the SHA-512 secret hash and performs block injection.
 /// Secret: SHA-512("ATOMIC_PYVM")
 
-const SECRET_HASH: &str = "e8c8f5b5e5c5f5b5e5c5f5b5e5c5f5b5e5c5f5b5e5c5f5b5e5c5f5b5e5c5f5b5e5c5f5b5e5c5f5b5e5c5f5b5e5c5f5b5e5c5f5b5e5c5f5b5e5c5f5b5";
+#[allow(dead_code)]
+pub const SECRET_HASH: &str = "e8c8f5b5e5c5f5b5e5c5f5b5e5c5f5b5e5c5f5b5e5c5f5b5e5c5f5b5e5c5f5b5e5c5f5b5e5c5f5b5e5c5f5b5e5c5f5b5e5c5f5b5e5c5f5b5e5c5f5b5";
 
 /// Computes SHA-512 hash of input
 pub fn compute_sha512(input: &[u8]) -> String {
@@ -181,7 +181,7 @@ pub fn control_flow_flatten(bytecode: &[u8]) -> Vec<u8> {
 
     // Generate random dispatch order
     let mut dispatch_order: Vec<u8> = (0..num_blocks as u8).collect();
-    let mut seed = compute_sha512(bytecode);
+    let seed = compute_sha512(bytecode);
     let seed_val = u64::from_str_radix(&seed[..16], 16).unwrap_or(0);
 
     // Fisher-Yates shuffle
@@ -204,7 +204,7 @@ pub fn control_flow_flatten(bytecode: &[u8]) -> Vec<u8> {
 /// Dead code injection
 pub fn inject_dead_code(bytecode: &[u8], density: f32) -> Vec<u8> {
     let mut result = Vec::new();
-    let mut rng_state = compute_sha512(bytecode);
+    let rng_state = compute_sha512(bytecode);
     let seed = u64::from_str_radix(&rng_state[..16], 16).unwrap_or(0);
     let mut state = seed;
 

@@ -1,4 +1,4 @@
-use atomic_pyvm_core::*;
+use rust_vm_core::*;
 use std::env;
 use std::process;
 

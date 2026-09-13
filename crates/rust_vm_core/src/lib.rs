@@ -1,6 +1,14 @@
 pub mod atomic_hash_validator;
+pub mod ffi;
+pub mod kernel;
+pub mod pipeline;
+pub mod primitives;
 
 pub use atomic_hash_validator::*;
+pub use ffi::*;
+pub use kernel::*;
+pub use pipeline::*;
+pub use primitives::*;
 
 #[cfg(test)]
 mod tests {
