@@ -1,6 +1,19 @@
 import { randomBytes, createHash, createHmac } from 'crypto';
 import { SecureLoggerService } from './secure-logger.service';
 
+export interface ApiKeyData {
+  key: string;
+  keyHash: string;
+  userId: string;
+  permissions: string[];
+  rateLimit: number;
+  createdAt: Date;
+  expiresAt: Date | null;
+  lastUsedAt: Date | null;
+  usageCount: number;
+  active: boolean;
+}
+
 /**
  * Authentication Service with JWT-like token generation.
  * Provides API key management and request authentication.
@@ -9,19 +22,6 @@ export class AuthenticationService {
   private static apiKeys = new Map<string, ApiKeyData>();
   private static readonly API_KEY_LENGTH = 32;
   private static readonly TOKEN_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
-
-  interface ApiKeyData {
-    key: string;
-    keyHash: string;
-    userId: string;
-    permissions: string[];
-    rateLimit: number;
-    createdAt: Date;
-    expiresAt: Date | null;
-    lastUsedAt: Date | null;
-    usageCount: number;
-    active: boolean;
-  }
 
   /**
    * Generates a cryptographically secure API key.

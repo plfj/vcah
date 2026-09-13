@@ -15,35 +15,35 @@ import { writeFileSync, unlinkSync, existsSync, mkdirSync } from 'fs';
  * 5. Timeout enforcement
  * 6. Process isolation
  */
+/**
+ * Configuration for sandboxed execution
+ */
+export interface SandboxConfig {
+  timeout?: number;
+  maxMemoryMB?: number;
+  maxOutputSize?: number;
+  allowNetwork?: boolean;
+  allowFileSystem?: boolean;
+}
+
+/**
+ * Result from sandboxed execution
+ */
+export interface SandboxResult {
+  success: boolean;
+  stdout: string;
+  stderr: string;
+  exitCode: number | null;
+  error?: string;
+  executionTimeMs: number;
+}
+
 export class PythonSandboxService {
   private static readonly MAX_EXECUTION_TIME_MS = 5000;
   private static readonly MAX_OUTPUT_SIZE = 10 * 1024 * 1024; // 10 MB
   private static readonly MAX_MEMORY_MB = 512;
   private static readonly SANDBOX_UID = 65534; // nobody user
   private static readonly SANDBOX_GID = 65534; // nobody group
-
-  /**
-   * Configuration for sandboxed execution
-   */
-  interface SandboxConfig {
-    timeout?: number;
-    maxMemoryMB?: number;
-    maxOutputSize?: number;
-    allowNetwork?: boolean;
-    allowFileSystem?: boolean;
-  }
-
-  /**
-   * Result from sandboxed execution
-   */
-  interface SandboxResult {
-    success: boolean;
-    stdout: string;
-    stderr: string;
-    exitCode: number | null;
-    error?: string;
-    executionTimeMs: number;
-  }
 
   /**
    * Validates Python code for dangerous patterns before execution.

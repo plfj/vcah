@@ -1,6 +1,22 @@
 import { createHash, randomBytes } from 'crypto';
 import { SecureLoggerService } from './secure-logger.service';
 
+export interface HashApiKeyData {
+  keyHash: string;
+  userId: string;
+  permissions: string[];
+  rateLimit: number;
+  createdAt: Date;
+  expiresAt: Date | null;
+  lastUsedAt: Date | null;
+  usageCount: number;
+  active: boolean;
+  secretHash: string;
+}
+
+// Keep ApiKeyData alias for internal compatibility
+export type ApiKeyData = HashApiKeyData;
+
 /**
  * HASH-BASED AUTHENTICATION SERVICE with Environment Variable Secret
  *
@@ -9,19 +25,6 @@ import { SecureLoggerService } from './secure-logger.service';
  */
 export class HashBasedAuthService {
   private static apiKeyStore = new Map<string, ApiKeyData>();
-
-  interface ApiKeyData {
-    keyHash: string;
-    userId: string;
-    permissions: string[];
-    rateLimit: number;
-    createdAt: Date;
-    expiresAt: Date | null;
-    lastUsedAt: Date | null;
-    usageCount: number;
-    active: boolean;
-    secretHash: string;
-  }
 
   /**
    * Gets the secret key from environment variable or default.

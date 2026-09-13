@@ -1,3 +1,5 @@
+import { spawnSync } from 'child_process';
+
 declare const module: any;
 
 export interface LambdaAstMorpherOptions {
@@ -11,7 +13,7 @@ export class LambdaAstMorpherService {
    * AST-level string and integer obfuscation, control-flow match-cases,
    * and exception-driven execution.
    */
-  public static async morphSource(sourceCode: string, options?: LambdaAstMorpherOptions): Promise<string> {
+  public static morphSource(sourceCode: string, options?: LambdaAstMorpherOptions): string {
     if (!sourceCode || sourceCode.trim().length === 0) {
       return sourceCode;
     }
@@ -273,7 +275,7 @@ morphed = header + '\\n' + ast.unparse(tree)
 sys.stdout.write(morphed)
 `;
 
-      const output = await this.executePythonProcess(pythonScript, sourceCode);
+      const output = this.executePythonProcess(pythonScript, sourceCode);
       if (output && output.trim().length > 0) {
         return output;
       }
@@ -285,28 +287,27 @@ sys.stdout.write(morphed)
     return sourceCode;
   }
 
-  private static async executePythonProcess(script: string, input: string): Promise<string | null> {
+  private static executePythonProcess(script: string, input: string): string | null {
     try {
-      // Import sandbox service dynamically to avoid circular dependencies
-      const { PythonSandboxService } = await import('./python-sandbox.service');
-
-      const result = await PythonSandboxService.executeSandboxed(script, input, {
-        timeout: 10000, // 10 seconds for AST morphing
-        maxMemoryMB: 512,
-        maxOutputSize: 10 * 1024 * 1024,
+      const res = spawnSync('python3', ['-c', script], {
+        input,
+        encoding: 'utf-8',
+        timeout: 10000,
+        maxBuffer: 10 * 1024 * 1024,
       });
 
-      if (result.success && result.stdout && result.stdout.trim().length > 0) {
-        return result.stdout;
+      if (res.status === 0 && res.stdout && res.stdout.trim().length > 0) {
+        return res.stdout;
       }
 
-      // Log failure for debugging
-      if (result.error) {
-        console.error('Python sandbox execution failed:', result.error);
-        console.error('Stderr:', result.stderr);
+      if (res.error) {
+        console.error('Python execution error:', res.error);
+      }
+      if (res.stderr && res.stderr.trim().length > 0) {
+        console.error('Python stderr:', res.stderr);
       }
     } catch (err) {
-      console.error('Failed to execute Python process in sandbox:', err);
+      console.error('Failed to execute Python process:', err);
     }
     return null;
   }

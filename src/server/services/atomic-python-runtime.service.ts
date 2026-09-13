@@ -1,11 +1,10 @@
-"""
-ATOMIC GRADE PYTHON RUNTIME DECRYPTOR
-This module provides AES-256-GCM decryption for atomic-grade obfuscated code.
-"""
+/**
+ * ATOMIC GRADE PYTHON RUNTIME DECRYPTOR
+ * This module provides AES-256-GCM decryption template for atomic-grade obfuscated code.
+ */
 
-# This is the Python runtime decryption template that will be embedded in generated code
-ATOMIC_RUNTIME_TEMPLATE = '''
-import sys
+// This is the Python runtime decryption template that will be embedded in generated code
+export const ATOMIC_RUNTIME_TEMPLATE = `import sys
 import struct
 import hashlib
 import hmac
@@ -268,40 +267,61 @@ class {ATOMIC_INTERPRETER_CLASS}:
     {PAYLOAD_LITERAL},
     "{MASTER_KEY}"
 ))(lambda scope, payload, key: {ATOMIC_INTERPRETER_CLASS}(scope, payload, key))
-'''
+`;
 
-def generate_atomic_python_runtime(config: dict) -> str:
-    """
-    Generates the atomic-grade Python runtime decryptor.
+export interface AtomicPythonRuntimeConfig {
+  master_key: string;
+  w1_hex: string;
+  w2_hex: string;
+  magic_bytes: string;
+  payload_literal: string;
+  seed?: number;
+  [key: string]: any;
+}
 
-    Args:
-        config: Configuration with master_key, w1_hex, w2_hex, magic_bytes, payload
+/**
+ * Generates the atomic-grade Python runtime decryptor.
+ *
+ * @param config Configuration with master_key, w1_hex, w2_hex, magic_bytes, payload_literal
+ * @returns Complete Python source code with embedded decryptor
+ */
+export function generateAtomicPythonRuntime(config: AtomicPythonRuntimeConfig): string {
+  // Deterministic pseudo-random identifier generator based on seed
+  let seed = config.seed !== undefined ? config.seed : 42;
+  const chars = 'abcdefghijklmnopqrstuvwxyz';
 
-    Returns:
-        Complete Python source code with embedded decryptor
-    """
+  const genId = (): string => {
+    let result = '';
+    for (let i = 0; i < 8; i++) {
+      seed = (seed * 1664525 + 1013904223) >>> 0;
+      result += chars[seed % chars.length];
+    }
+    return result;
+  };
 
-    # Generate obfuscated identifiers
-    import random
-    random.seed(config.get('seed', 42))
+  // Replace placeholders
+  let runtime = ATOMIC_RUNTIME_TEMPLATE;
+  runtime = runtime.split('{ATOMIC_INTERPRETER_CLASS}').join(genId());
+  runtime = runtime.split('{EXECUTE_METHOD}').join(genId());
+  runtime = runtime.split('{DERIVE_KEY_METHOD}').join(genId());
+  runtime = runtime.split('{CONSTANT_TIME_COMPARE_METHOD}').join(genId());
+  runtime = runtime.split('{COMPUTE_HMAC_METHOD}').join(genId());
+  runtime = runtime.split('{VERIFY_HMAC_METHOD}').join(genId());
+  runtime = runtime.split('{DECRYPT_AES_GCM_METHOD}').join(genId());
+  runtime = runtime.split('{ANTI_DEBUG_METHOD}').join(genId());
+  runtime = runtime.split('{MAGIC_BYTES}').join(config.magic_bytes);
+  runtime = runtime.split('{W1_HEX}').join(config.w1_hex);
+  runtime = runtime.split('{W2_HEX}').join(config.w2_hex);
+  runtime = runtime.split('{MASTER_KEY}').join(config.master_key);
+  runtime = runtime.split('{PAYLOAD_LITERAL}').join(config.payload_literal);
 
-    def gen_id():
-        return ''.join(random.choices('abcdefghijklmnopqrstuvwxyz', k=8))
+  return runtime;
+}
 
-    # Replace placeholders
-    runtime = ATOMIC_RUNTIME_TEMPLATE
-    runtime = runtime.replace('{ATOMIC_INTERPRETER_CLASS}', gen_id())
-    runtime = runtime.replace('{EXECUTE_METHOD}', gen_id())
-    runtime = runtime.replace('{DERIVE_KEY_METHOD}', gen_id())
-    runtime = runtime.replace('{CONSTANT_TIME_COMPARE_METHOD}', gen_id())
-    runtime = runtime.replace('{COMPUTE_HMAC_METHOD}', gen_id())
-    runtime = runtime.replace('{VERIFY_HMAC_METHOD}', gen_id())
-    runtime = runtime.replace('{DECRYPT_AES_GCM_METHOD}', gen_id())
-    runtime = runtime.replace('{ANTI_DEBUG_METHOD}', gen_id())
-    runtime = runtime.replace('{MAGIC_BYTES}', config['magic_bytes'])
-    runtime = runtime.replace('{W1_HEX}', config['w1_hex'])
-    runtime = runtime.replace('{W2_HEX}', config['w2_hex'])
-    runtime = runtime.replace('{MASTER_KEY}', config['master_key'])
-    runtime = runtime.replace('{PAYLOAD_LITERAL}', config['payload_literal'])
+export class AtomicPythonRuntimeService {
+  public static generate(config: AtomicPythonRuntimeConfig): string {
+    return generateAtomicPythonRuntime(config);
+  }
+}
 
-    return runtime
+export default AtomicPythonRuntimeService;
