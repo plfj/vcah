@@ -100,10 +100,13 @@ export class PythonSandboxService {
    * Creates a restricted Python environment wrapper script.
    */
   private static createRestrictedPythonWrapper(userCode: string): string {
+    const userCodeBase64 = Buffer.from(userCode, 'utf-8').toString('base64');
+
     return `
 import sys
 import signal
 import resource
+import base64
 
 # Set resource limits
 def set_limits():
@@ -141,8 +144,9 @@ try:
     signal.signal(signal.SIGALRM, timeout_handler)
     signal.alarm(5)
 
-    # Execute user code in restricted environment
-    exec('''${userCode.replace(/'/g, "\\'")}''', restricted_globals)
+    # Decode user code safely from base64 without string escaping vulnerabilities
+    __user_code = base64.b64decode("${userCodeBase64}").decode('utf-8')
+    exec(__user_code, restricted_globals)
 
 except Exception as e:
     sys.stderr.write(f"Sandbox Error: {type(e).__name__}: {str(e)}\\n")

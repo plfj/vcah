@@ -4,7 +4,7 @@ import { OpcodeScramblerService } from './opcode-scrambler.service';
 import { EntropyService } from './entropy.service';
 import { LambdaAstMorpherService } from './lambda-ast-morpher.service';
 import { SecureKeyDerivationService } from './secure-key-derivation.service';
-import { createHash, randomBytes } from 'crypto';
+import { randomBytes, pbkdf2Sync } from 'crypto';
 
 /**
  * ATOMIC GRADE RUST VM GENERATOR SERVICE
@@ -102,14 +102,16 @@ export class AtomicGradeRustVmGeneratorService {
   }
 
   /**
-   * Derives W2 from W1 using cryptographic hash function (not simple XOR).
+   * Derives W2 from W1 using cryptographic derivation (PBKDF2 with domain separation).
    */
   private static deriveW2FromW1(w1Hex: string): string {
-    const hash = createHash('sha256')
-      .update(Buffer.from(w1Hex, 'hex'))
-      .update(Buffer.from('LAYER2_AEGIS_CFF_DOMAIN_SEPARATOR'))
-      .digest('hex');
-    return hash;
+    return pbkdf2Sync(
+      w1Hex,
+      'LAYER2_AEGIS_CFF_DOMAIN_SEPARATOR',
+      100000,
+      32,
+      'sha256'
+    ).toString('hex');
   }
 
   /**

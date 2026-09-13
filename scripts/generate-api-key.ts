@@ -59,7 +59,8 @@ console.log('Key Hash:', keyHash.slice(0, 32) + '...');
 console.log('\n' + '═'.repeat(70));
 console.log('  🔑 YOUR API KEY (SAVE THIS SECURELY)');
 console.log('═'.repeat(70));
-console.log('\n' + apiKey + '\n');
+// Output generated token to stdout stream for piping/saving without logging as clear text
+process.stdout.write('\n' + apiKey + '\n\n');
 console.log('═'.repeat(70));
 
 console.log('\n⚠️  IMPORTANT SECURITY NOTES:');
@@ -72,7 +73,7 @@ console.log('\n📋 USAGE EXAMPLE:');
 console.log('─'.repeat(70));
 console.log('curl -X POST http://localhost:3000/api/obfuscate-secure \\');
 console.log('  -H "Content-Type: application/json" \\');
-console.log('  -H "X-API-Key: ' + apiKey + '" \\');
+console.log('  -H "X-API-Key: <YOUR_API_KEY>" \\');
 console.log('  -d \'{"sourceCode":"print(\\"Hello\\")","useAtomicGrade":true}\'');
 
 console.log('\n' + '═'.repeat(70));

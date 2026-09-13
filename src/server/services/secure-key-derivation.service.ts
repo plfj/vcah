@@ -1,4 +1,4 @@
-import { randomBytes, createHash, pbkdf2Sync, createCipheriv, createDecipheriv, randomFillSync } from 'crypto';
+import { randomBytes, createHmac, pbkdf2Sync, createCipheriv, createDecipheriv, randomFillSync } from 'crypto';
 
 /**
  * Secure Key Derivation Service using industry-standard cryptographic functions.
@@ -85,8 +85,7 @@ export class SecureKeyDerivationService {
    * Computes HMAC-SHA256 for integrity verification (constant-time comparison safe).
    */
   public static computeHMAC(data: Buffer, key: Buffer): Buffer {
-    const hmac = createHash('sha256').update(Buffer.concat([key, data])).digest();
-    return hmac;
+    return createHmac('sha256', key).update(data).digest();
   }
 
   /**
@@ -104,13 +103,17 @@ export class SecureKeyDerivationService {
   }
 
   /**
-   * Generates a cryptographically secure witness token using HMAC.
+   * Generates a cryptographically secure witness token using high-security PBKDF2.
+   * Provides substantial computational effort against password cracking (CWE-916).
    */
   public static generateWitness(data: Buffer, seed: Buffer): string {
-    const hmac = createHash('sha256')
-      .update(Buffer.concat([seed, data]))
-      .digest('hex');
-    return hmac;
+    return pbkdf2Sync(
+      data,
+      seed,
+      SecureKeyDerivationService.PBKDF2_ITERATIONS,
+      SecureKeyDerivationService.KEY_LENGTH,
+      'sha256'
+    ).toString('hex');
   }
 
   /**

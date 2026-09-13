@@ -1,4 +1,4 @@
-import { randomBytes, createHash, createHmac } from 'crypto';
+import { randomBytes, createHmac, pbkdf2Sync } from 'crypto';
 import { SecureLoggerService } from './secure-logger.service';
 
 export interface ApiKeyData {
@@ -22,6 +22,8 @@ export class AuthenticationService {
   private static apiKeys = new Map<string, ApiKeyData>();
   private static readonly API_KEY_LENGTH = 32;
   private static readonly TOKEN_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
+  private static readonly HASH_SALT = 'pyvm_api_auth_key_salt_v1_secure';
+  private static readonly HASH_ITERATIONS = 100000;
 
   /**
    * Generates a cryptographically secure API key.
@@ -32,10 +34,17 @@ export class AuthenticationService {
   }
 
   /**
-   * Hashes an API key for secure storage.
+   * Hashes an API key for secure storage using PBKDF2 (sufficient computational effort).
+   * Adheres to OWASP credential storage recommendations (CWE-916).
    */
   private static hashApiKey(apiKey: string): string {
-    return createHash('sha256').update(apiKey).digest('hex');
+    return pbkdf2Sync(
+      apiKey,
+      AuthenticationService.HASH_SALT,
+      AuthenticationService.HASH_ITERATIONS,
+      32,
+      'sha256'
+    ).toString('hex');
   }
 
   /**
