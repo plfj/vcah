@@ -4,7 +4,7 @@ import { OpcodeScramblerService } from './opcode-scrambler.service';
 import { EntropyService } from './entropy.service';
 import { LambdaAstMorpherService } from './lambda-ast-morpher.service';
 import { SecureKeyDerivationService } from './secure-key-derivation.service';
-import { randomBytes, pbkdf2Sync } from 'crypto';
+import { randomBytes, pbkdf2Sync } from 'node:crypto';
 
 /**
  * ATOMIC GRADE RUST VM GENERATOR SERVICE

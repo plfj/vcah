@@ -1,7 +1,7 @@
 import { HashBasedAuthService } from './hash-based-auth.service';
 import { SecureLoggerService } from './secure-logger.service';
 import { LambdaAstMorpherService } from './lambda-ast-morpher.service';
-import { createHash, randomBytes } from 'crypto';
+import { createHash, randomBytes } from 'node:crypto';
 
 /**
  * ULTRA ADVANCED OBFUSCATION SERVICE

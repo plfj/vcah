@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { createHash } from 'crypto';
+import { createHash } from 'node:crypto';
 
 /**
  * Rate Limiting Service with sliding window algorithm.
