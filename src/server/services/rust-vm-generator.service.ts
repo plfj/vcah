@@ -5,6 +5,7 @@ import { EntropyService } from './entropy.service';
 import { LambdaAstMorpherService } from './lambda-ast-morpher.service';
 import { SecureKeyDerivationService } from './secure-key-derivation.service';
 import { pbkdf2Sync } from 'crypto';
+import { Buffer } from 'buffer';
 
 /**
  * Deterministic pseudo-random identifier mangler using CJK Unified Ideographs

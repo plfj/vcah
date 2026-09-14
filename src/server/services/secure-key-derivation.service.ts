@@ -1,4 +1,5 @@
 import { randomBytes, createHmac, pbkdf2Sync, createCipheriv, createDecipheriv, randomFillSync } from 'crypto';
+import { Buffer } from 'buffer';
 
 /**
  * Secure Key Derivation Service using industry-standard cryptographic functions.
