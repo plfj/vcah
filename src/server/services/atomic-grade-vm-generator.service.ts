@@ -21,6 +21,11 @@ import { randomBytes, pbkdf2Sync } from 'crypto';
 /**
  * Deterministic pseudo-random identifier mangler using CJK Unified Ideographs
  * Now uses cryptographically secure seed generation
+ *
+ * NOTE: nextRand() uses LCG for deterministic identifier generation (CWE-327 false positive)
+ * This is intentionally deterministic to ensure reproducible output with the same seed.
+ * The seed itself is cryptographically generated, but the PRNG is deterministic by design
+ * for reproducibility. This is NOT used for security-critical operations.
  */
 class IdentifierMangler {
   private seed: number;

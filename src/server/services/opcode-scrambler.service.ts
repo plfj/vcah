@@ -59,6 +59,11 @@ export class OpcodeScramblerService {
     }
 
     // Seeded Linear Congruential Generator for deterministic shuffling
+    // NOTE: This is NOT for cryptographic purposes (CWE-327 false positive)
+    // This LCG provides deterministic, reproducible opcode mapping for the same seed
+    // allowing users to regenerate identical obfuscation with the same configuration.
+    // Cryptographic randomness is NOT required here as this is for obfuscation,
+    // not security. Security-critical operations use crypto.randomBytes().
     let currentSeed = seed || 428937;
     const nextRandom = () => {
       currentSeed = (currentSeed * 1664525 + 1013904223) % 4294967296;
