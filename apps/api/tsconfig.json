@@ -4,6 +4,7 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "lib": ["es2022"],
+    "types": ["node"],
     "declaration": true,
     "removeComments": true,
     "emitDecoratorMetadata": true,
