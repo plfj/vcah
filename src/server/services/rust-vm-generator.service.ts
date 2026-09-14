@@ -3,6 +3,8 @@ import { MagicHeaderService } from './magic-header.service';
 import { OpcodeScramblerService } from './opcode-scrambler.service';
 import { EntropyService } from './entropy.service';
 import { LambdaAstMorpherService } from './lambda-ast-morpher.service';
+import { SecureKeyDerivationService } from './secure-key-derivation.service';
+import { pbkdf2Sync } from 'crypto';
 
 /**
  * Deterministic pseudo-random identifier mangler using CJK Unified Ideographs
@@ -104,7 +106,6 @@ export class RustVmGeneratorService {
    * Fixed CWE-328: Use of Weak Hash - replaced rolling hash with HMAC-SHA256
    */
   private static computeWitness(bytes: number[], seed = 0x5A5A5A5A): string {
-    const { SecureKeyDerivationService } = require('./secure-key-derivation.service');
     const data = Buffer.from(bytes);
     const seedBuffer = Buffer.alloc(4);
     seedBuffer.writeUInt32BE(seed, 0);
@@ -116,7 +117,6 @@ export class RustVmGeneratorService {
    * Fixed CWE-328: Use of Weak Hash - replaced arithmetic mixing with PBKDF2
    */
   private static simulateCffWitness(w1Hex: string): string {
-    const { pbkdf2Sync } = require('crypto');
     return pbkdf2Sync(
       w1Hex,
       'LAYER2_AEGIS_CFF_DOMAIN_SEPARATOR',
