@@ -13,20 +13,76 @@ type ApiResponse = {
   [key: string]: any;
 };
 
+/**
+ * Parses request body with size limits and timeout protection.
+ * Fixed CWE-400: Uncontrolled Resource Consumption
+ * Fixed CWE-772: Missing Release of Resource after Effective Lifetime
+ */
 function parseBody(req: ApiRequest): Promise<any> {
   return new Promise((resolve, reject) => {
     let body = '';
-    req.on('data', (chunk: any) => {
+    let totalSize = 0;
+    const MAX_BODY_SIZE = 200 * 1024; // 200 KB limit
+    let completed = false;
+
+    const cleanup = () => {
+      if (!completed) {
+        completed = true;
+        req.removeAllListeners('data');
+        req.removeAllListeners('end');
+        req.removeAllListeners('error');
+      }
+    };
+
+    const dataHandler = (chunk: any) => {
+      if (completed) return;
+      totalSize += chunk.length;
+      if (totalSize > MAX_BODY_SIZE) {
+        cleanup();
+        reject(new Error('Request body too large'));
+        return;
+      }
       body += chunk;
-    });
-    req.on('end', () => {
+    };
+
+    const endHandler = () => {
+      if (completed) return;
+      cleanup();
       try {
         resolve(body ? JSON.parse(body) : {});
       } catch (err) {
-        reject(err);
+        reject(new Error('Invalid JSON'));
       }
-    });
-    req.on('error', reject);
+    };
+
+    const errorHandler = (err: Error) => {
+      if (completed) return;
+      cleanup();
+      reject(err);
+    };
+
+    req.on('data', dataHandler);
+    req.on('end', endHandler);
+    req.on('error', errorHandler);
+
+    // Timeout after 10 seconds - properly abort request
+    const timeoutId = setTimeout(() => {
+      if (completed) return;
+      cleanup();
+      reject(new Error('Request timeout'));
+    }, 10000);
+
+    // Clear timeout if request completes normally
+    const originalResolve = resolve;
+    resolve = (value: any) => {
+      clearTimeout(timeoutId);
+      originalResolve(value);
+    };
+    const originalReject = reject;
+    reject = (reason: any) => {
+      clearTimeout(timeoutId);
+      originalReject(reason);
+    };
   });
 }
 

@@ -26,6 +26,7 @@ export class EntropyService {
 
   /**
    * Generates a byte distribution histogram (16 buckets for 0x00 - 0xFF)
+   * Fixed CWE-190: Integer Overflow - validates byte range
    */
   public static getByteDistribution(data: Uint8Array | number[]): { bucket: string; count: number; entropyContribution: number }[] {
     const buckets = Array(16).fill(0);
@@ -38,7 +39,8 @@ export class EntropyService {
 
     const total = data.length || 1;
     for (let i = 0; i < data.length; i++) {
-      const b = data[i];
+      // Fixed CWE-190: Ensure byte is in valid range [0-255] before bucketing
+      const b = data[i] & 0xFF; // Mask to valid byte range
       const bucketIdx = Math.min(15, Math.floor(b / 16));
       buckets[bucketIdx]++;
     }

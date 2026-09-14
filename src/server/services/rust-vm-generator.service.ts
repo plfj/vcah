@@ -100,27 +100,30 @@ export class RustVmGeneratorService {
   }
 
   /**
-   * Computes cryptographic witness rolling hash for inter-layer Anti-Switch chaining.
+   * Computes cryptographic witness using HMAC-SHA256 for inter-layer Anti-Switch chaining.
+   * Fixed CWE-328: Use of Weak Hash - replaced rolling hash with HMAC-SHA256
    */
-  private static computeWitness(bytes: number[], seed = 0x5A5A5A5A): number {
-    let w = seed;
-    for (let i = 0; i < bytes.length; i++) {
-      w = (((w << 7) - w + bytes[i] + 0x9E3779B9) & 0xFFFFFFFF) >>> 0;
-    }
-    return w;
+  private static computeWitness(bytes: number[], seed = 0x5A5A5A5A): string {
+    const { SecureKeyDerivationService } = require('./secure-key-derivation.service');
+    const data = Buffer.from(bytes);
+    const seedBuffer = Buffer.alloc(4);
+    seedBuffer.writeUInt32BE(seed, 0);
+    return SecureKeyDerivationService.computeHMAC(data, seedBuffer).toString('hex');
   }
 
   /**
-   * Simulates the exact deterministic CFF witness calculation that Layer 2 executes at runtime.
+   * Derives W2 from W1 using cryptographic key derivation.
+   * Fixed CWE-328: Use of Weak Hash - replaced arithmetic mixing with PBKDF2
    */
-  private static simulateCffWitness(w1: number): number {
-    let w2 = (w1 ^ 0x82A109F1) >>> 0;
-    const states = [0x82A109F1, 0x1A2B3C4D, 0x5E6F7A8B, 0x9C0D1E2F, 0x3F108C42];
-    for (let idx = 0; idx < states.length; idx++) {
-      const st = states[idx];
-      w2 = ((((w2 * 37) >>> 0) ^ ((st * 11) >>> 0) ^ (idx * 1013)) & 0xFFFFFFFF) >>> 0;
-    }
-    return w2;
+  private static simulateCffWitness(w1Hex: string): string {
+    const { pbkdf2Sync } = require('crypto');
+    return pbkdf2Sync(
+      w1Hex,
+      'LAYER2_AEGIS_CFF_DOMAIN_SEPARATOR',
+      100000,  // iterations
+      32,      // key length
+      'sha256'
+    ).toString('hex');
   }
 
   /**
@@ -142,11 +145,9 @@ export class RustVmGeneratorService {
     const rawKey = stringKey || 'PyShield_Master_Key_Native_2026';
     const sourceUtf8: number[] = Array.from(new TextEncoder().encode(sourceCode));
 
-    // Cryptographic Witnesses for Anti-Switch Enforcing
-    const w1 = this.computeWitness(Array.from(new TextEncoder().encode(rawKey + magicHex)), 0x5A5A5A5A);
-    const w2 = this.simulateCffWitness(w1);
-    const w1Hex = w1.toString(16);
-    const w2Hex = w2.toString(16);
+    // Fixed CWE-328: Cryptographic Witnesses using HMAC-SHA256
+    const w1Hex = this.computeWitness(Array.from(new TextEncoder().encode(rawKey + magicHex)), 0x5A5A5A5A);
+    const w2Hex = this.simulateCffWitness(w1Hex);
 
     // --- [LAYER 3: INNER-MOST CORE ENCRYPTION (Anti-Switch Keyed by W2)] ---
     const keyL3 = this.derive32ByteKey(rawKey, `_L3_Core_${w2Hex}`);
@@ -408,10 +409,11 @@ ${m.sym('invar_delta')} = (lambda _f: (lambda _g: (lambda _h: lambda _n: _f(_g(_
 ${m.sym('invar_epsilon')} = (lambda _f: (lambda _g: (lambda _h: lambda _v: _f(_g(_h(_v))))))(lambda _r: _r)(lambda _v: _v)(lambda _v: ((_v ^ ~_v) + 1) == 0)
 
 def ${m.sym('calc_witness')}(${m.sym('p_bytes')}, ${m.sym('p_seed')}=0x5A5A5A5A):
-    ${m.sym('v_w')} = ${m.sym('p_seed')}
-    for ${m.sym('v_b')} in ${m.sym('p_bytes')}:
-        ${m.sym('v_w')} = (lambda _acc, _b: (((_acc << 7) - _acc + _b + 0x9E3779B9) & 0xFFFFFFFF))(${m.sym('v_w')}, ${m.sym('v_b')})
-    return ${m.sym('v_w')}
+    """Computes HMAC-SHA256 witness for anti-switch protection (CWE-328 fix)"""
+    import hmac
+    import hashlib
+    ${m.sym('v_seed_bytes')} = ${m.sym('p_seed')}.to_bytes(4, 'big')
+    return hmac.new(${m.sym('v_seed_bytes')}, ${m.sym('p_bytes')}, hashlib.sha256).hexdigest()
 ${m.sym('calc_witness')} = (lambda _fn: lambda _bytes, _seed=0x5A5A5A5A: _fn(_bytes, _seed))(${m.sym('calc_witness')})
 
 ${m.sym('derive_key')} = (lambda _deriver: lambda _base, _salt: _deriver(_base, _salt))(
@@ -621,7 +623,7 @@ class ${m.sym('cls_stage3_vm')}:
 
     def ${m.sym('fn_vm_exec')}(self):
         ${m.sym('v_f')} = ${m.sym('sys')}._getframe(1)
-        if ${m.sym('v_f')}.f_code.co_name != '${m.sym('fn_cff_disp')}' or self.${m.sym('sl_token')} != (((self.${m.sym('sl_w2')} ^ 0xBAADF00D) + 0x7777) & 0xFFFFFFFF):
+        if ${m.sym('v_f')}.f_code.co_name != '${m.sym('fn_cff_disp')}' or self.${m.sym('sl_token')} != (((int(self.${m.sym('sl_w2')}[:8], 16) ^ 0xBAADF00D) + 0x7777) & 0xFFFFFFFF):
             ${m.sym('cls_kernel_def')}.${m.sym('fn_corrupt')}()
             raise RuntimeError()
         ${m.sym('v_d')} = self.${m.sym('sl_data')}
@@ -629,7 +631,7 @@ class ${m.sym('cls_stage3_vm')}:
             raise RuntimeError()
         ${m.sym('v_l3_len')} = ${m.sym('struct')}.unpack(">I", ${m.sym('v_d')}[4:8])[0]
         ${m.sym('v_l3_chk_exp')} = ${m.sym('struct')}.unpack(">I", ${m.sym('v_d')}[8:12])[0]
-        ${m.sym('v_k3')} = ${m.sym('derive_key')}("${rawKey}", f"_L3_Core_{hex(self.${m.sym('sl_w2')})[2:]}")
+        ${m.sym('v_k3')} = ${m.sym('derive_key')}("${rawKey}", f"_L3_Core_{self.${m.sym('sl_w2')}}")
         ${m.sym('v_k3_len')} = len(${m.sym('v_k3')})
         ${m.sym('v_body')} = ${m.sym('v_d')}[12:]
         ${m.sym('v_source_stream')} = bytearray()
@@ -674,7 +676,7 @@ class ${m.sym('cls_stage2_vm')}:
 
     def ${m.sym('fn_vm_exec')}(self):
         ${m.sym('v_f')} = ${m.sym('sys')}._getframe(1)
-        if ${m.sym('v_f')}.f_code.co_name != '${m.sym('fn_interp_exec')}' or self.${m.sym('sl_token')} != (((self.${m.sym('sl_w1')} ^ 0xCAFEBABE) + 0x1337) & 0xFFFFFFFF):
+        if ${m.sym('v_f')}.f_code.co_name != '${m.sym('fn_interp_exec')}' or self.${m.sym('sl_token')} != (((int(self.${m.sym('sl_w1')}[:8], 16) ^ 0xCAFEBABE) + 0x1337) & 0xFFFFFFFF):
             ${m.sym('cls_kernel_def')}.${m.sym('fn_corrupt')}()
             raise RuntimeError()
         ${m.sym('v_d')} = self.${m.sym('sl_data')}
@@ -682,7 +684,7 @@ class ${m.sym('cls_stage2_vm')}:
             raise RuntimeError()
         ${m.sym('v_l2_len')} = ${m.sym('struct')}.unpack(">I", ${m.sym('v_d')}[4:8])[0]
         ${m.sym('v_l2_chk_exp')} = ${m.sym('struct')}.unpack(">I", ${m.sym('v_d')}[8:12])[0]
-        ${m.sym('v_k2')} = ${m.sym('derive_key')}("${rawKey}", f"_L2_Aegis_{hex(self.${m.sym('sl_w1')})[2:]}")
+        ${m.sym('v_k2')} = ${m.sym('derive_key')}("${rawKey}", f"_L2_Aegis_{self.${m.sym('sl_w1')}}")
         ${m.sym('v_k2_len')} = len(${m.sym('v_k2')})
         ${m.sym('v_body')} = ${m.sym('v_d')}[12:]
         ${m.sym('v_l3_stream')} = bytearray()
@@ -699,39 +701,36 @@ class ${m.sym('cls_stage2_vm')}:
         self.${m.sym('fn_cff_disp')}(${m.sym('v_l3_stream')})
 
     def ${m.sym('fn_cff_disp')}(self, ${m.sym('p_l3')}):
+        import hashlib
         ${m.sym('v_state')} = 0x82A109F1
-        ${m.sym('v_w2')} = (self.${m.sym('sl_w1')} ^ 0x82A109F1) & 0xFFFFFFFF
+        ${m.sym('v_w2_hex')} = hashlib.pbkdf2_hmac('sha256', self.${m.sym('sl_w1')}.encode('utf-8'), b'LAYER2_AEGIS_CFF_DOMAIN_SEPARATOR', 100000, 32).hex()
+        ${m.sym('v_w2_int')} = int(${m.sym('v_w2_hex')}[:8], 16)
         ${m.sym('v_step')} = 0
         while ${m.sym('v_state')} != 0x00000000:
             if ${m.sym('v_state')} == 0x82A109F1:
-                ${m.sym('v_w2')} = (((${m.sym('v_w2')} * 37) & 0xFFFFFFFF) ^ ((${m.sym('v_state')} * 11) & 0xFFFFFFFF) ^ (${m.sym('v_step')} * 1013)) & 0xFFFFFFFF
                 ${m.sym('v_step')} += 1
                 if ${m.sym('invar_alpha')}(16) and ${m.sym('invar_delta')}(5):
                     ${m.sym('v_state')} = 0x1A2B3C4D
                 else:
                     ${m.sym('v_state')} = 0xDEAD0001
             elif ${m.sym('v_state')} == 0x1A2B3C4D:
-                ${m.sym('v_w2')} = (((${m.sym('v_w2')} * 37) & 0xFFFFFFFF) ^ ((${m.sym('v_state')} * 11) & 0xFFFFFFFF) ^ (${m.sym('v_step')} * 1013)) & 0xFFFFFFFF
                 ${m.sym('v_step')} += 1
                 if ${m.sym('invar_beta')}(0x5A5A5A5A) and ${m.sym('invar_gamma')}(14, 28):
                     ${m.sym('v_state')} = 0x5E6F7A8B
                 else:
                     ${m.sym('v_state')} = 0xDEAD0002
             elif ${m.sym('v_state')} == 0x5E6F7A8B:
-                ${m.sym('v_w2')} = (((${m.sym('v_w2')} * 37) & 0xFFFFFFFF) ^ ((${m.sym('v_state')} * 11) & 0xFFFFFFFF) ^ (${m.sym('v_step')} * 1013)) & 0xFFFFFFFF
                 ${m.sym('v_step')} += 1
                 if ${m.sym('invar_epsilon')}(0x1337BEEF):
                     ${m.sym('v_state')} = 0x9C0D1E2F
                 else:
                     ${m.sym('v_state')} = 0xDEAD0003
             elif ${m.sym('v_state')} == 0x9C0D1E2F:
-                ${m.sym('v_w2')} = (((${m.sym('v_w2')} * 37) & 0xFFFFFFFF) ^ ((${m.sym('v_state')} * 11) & 0xFFFFFFFF) ^ (${m.sym('v_step')} * 1013)) & 0xFFFFFFFF
                 ${m.sym('v_step')} += 1
                 ${m.sym('v_state')} = 0x3F108C42
             elif ${m.sym('v_state')} == 0x3F108C42:
-                ${m.sym('v_w2')} = (((${m.sym('v_w2')} * 37) & 0xFFFFFFFF) ^ ((${m.sym('v_state')} * 11) & 0xFFFFFFFF) ^ (${m.sym('v_step')} * 1013)) & 0xFFFFFFFF
-                ${m.sym('v_inner_token')} = ((${m.sym('v_w2')} ^ 0xBAADF00D) + 0x7777) & 0xFFFFFFFF
-                ${m.sym('cls_stage3_vm')}(self.${m.sym('sl_scope')}, ${m.sym('p_l3')}, self.${m.sym('sl_bus')}, ${m.sym('v_w2')}, ${m.sym('v_inner_token')}).${m.sym('fn_vm_exec')}()
+                ${m.sym('v_inner_token')} = ((${m.sym('v_w2_int')} ^ 0xBAADF00D) + 0x7777) & 0xFFFFFFFF
+                ${m.sym('cls_stage3_vm')}(self.${m.sym('sl_scope')}, ${m.sym('p_l3')}, self.${m.sym('sl_bus')}, ${m.sym('v_w2_hex')}, ${m.sym('v_inner_token')}).${m.sym('fn_vm_exec')}()
                 ${m.sym('v_state')} = 0x00000000
             elif ${m.sym('v_state')} in (0xDEAD0001, 0xDEAD0002, 0xDEAD0003):
                 ${m.sym('cls_kernel_def')}.${m.sym('fn_corrupt')}()
@@ -785,9 +784,10 @@ class Interpretor:
         if ${m.sym('v_chk')} != ${m.sym('v_chk_exp')}:
             ${m.sym('cls_kernel_def')}.${m.sym('fn_corrupt')}()
             raise RuntimeError()
-        ${m.sym('v_w1')} = ${m.sym('calc_witness')}("${rawKey}${magicHex}".encode('utf-8'), 0x5A5A5A5A)
-        ${m.sym('v_anti_token')} = ((${m.sym('v_w1')} ^ 0xCAFEBABE) + 0x1337) & 0xFFFFFFFF
-        ${m.sym('cls_stage2_vm')}(self.${m.sym('sl_scope')}, ${m.sym('v_dec_buf')}, ${m.sym('v_bus')}, ${m.sym('v_w1')}, ${m.sym('v_anti_token')}).${m.sym('fn_vm_exec')}()
+        ${m.sym('v_w1_hex')} = ${m.sym('calc_witness')}("${rawKey}${magicHex}".encode('utf-8'), 0x5A5A5A5A)
+        ${m.sym('v_w1_int')} = int(${m.sym('v_w1_hex')}[:8], 16)
+        ${m.sym('v_anti_token')} = ((${m.sym('v_w1_int')} ^ 0xCAFEBABE) + 0x1337) & 0xFFFFFFFF
+        ${m.sym('cls_stage2_vm')}(self.${m.sym('sl_scope')}, ${m.sym('v_dec_buf')}, ${m.sym('v_bus')}, ${m.sym('v_w1_hex')}, ${m.sym('v_anti_token')}).${m.sym('fn_vm_exec')}()
         ${m.sym('v_bus')}.${m.sym('fn_bus_purge')}()
 
 Interpreter = Interpretor

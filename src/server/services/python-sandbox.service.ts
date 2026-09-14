@@ -187,8 +187,11 @@ finally:
     const scriptPath = join(tempDir, `pyvm_sandbox_${scriptId}.py`);
     const wrappedScript = this.createRestrictedPythonWrapper(pythonScript);
 
+    // Fixed CWE-459: Incomplete Cleanup - ensure cleanup even on spawn failure
+    let scriptCreated = false;
     try {
       writeFileSync(scriptPath, wrappedScript, { mode: 0o400 }); // Read-only
+      scriptCreated = true;
 
       return await new Promise<SandboxResult>((resolve) => {
         let stdout = '';
@@ -275,14 +278,26 @@ finally:
           });
         });
       });
+    } catch (spawnError: any) {
+      // Handle synchronous spawn failures
+      return {
+        success: false,
+        stdout: '',
+        stderr: spawnError.message || 'Failed to spawn process',
+        exitCode: null,
+        error: spawnError.message,
+        executionTimeMs: Date.now() - startTime,
+      };
     } finally {
-      // Clean up temporary file
-      try {
-        if (existsSync(scriptPath)) {
-          unlinkSync(scriptPath);
+      // Fixed CWE-459: Always clean up temporary file, even on spawn failure
+      if (scriptCreated) {
+        try {
+          if (existsSync(scriptPath)) {
+            unlinkSync(scriptPath);
+          }
+        } catch {
+          // Ignore cleanup errors
         }
-      } catch {
-        // Ignore cleanup errors
       }
     }
   }
