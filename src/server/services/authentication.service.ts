@@ -1,4 +1,4 @@
-import { randomBytes, createHmac, pbkdf2Sync } from 'node:crypto';
+import { randomBytes, createHmac, pbkdf2Sync } from './crypto-compat';
 import { SecureLoggerService } from './secure-logger.service';
 
 export interface ApiKeyData {

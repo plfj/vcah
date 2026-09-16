@@ -4,8 +4,7 @@ import { OpcodeScramblerService } from './opcode-scrambler.service';
 import { EntropyService } from './entropy.service';
 import { LambdaAstMorpherService } from './lambda-ast-morpher.service';
 import { SecureKeyDerivationService } from './secure-key-derivation.service';
-import { pbkdf2Sync } from 'node:crypto';
-import { Buffer } from 'node:buffer';
+import { pbkdf2Sync, Buffer } from './crypto-compat';
 
 /**
  * Deterministic pseudo-random identifier mangler using CJK Unified Ideographs

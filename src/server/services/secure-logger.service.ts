@@ -1,5 +1,5 @@
 import { createLogger, format, transports, Logger } from 'winston';
-import { createHash } from 'node:crypto';
+import { createHash } from './crypto-compat';
 
 /**
  * Secure Logging Service with PII redaction and structured logging.

@@ -1,6 +1,6 @@
 import { HashBasedAuthService } from './hash-based-auth.service';
 import { SecureLoggerService } from './secure-logger.service';
-import { createHash, randomBytes } from 'node:crypto';
+import { createHash, randomBytes } from './crypto-compat';
 
 /**
  * EXTREME OBFUSCATION SERVICE - 950X SIZE EXPANSION
