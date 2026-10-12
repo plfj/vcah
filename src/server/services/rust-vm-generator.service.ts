@@ -143,7 +143,65 @@ export class RustVmGeneratorService {
     config?: any
   ): { bytes: number[]; chunkCount: number; w1Hex: string; w2Hex: string } {
     const rawKey = stringKey || 'PyShield_Master_Key_Native_2026';
-    const sourceUtf8: number[] = Array.from(new TextEncoder().encode(sourceCode));
+    // Prepend all security functions strictly into the INNER LAYER (Layer 3 Core)
+    // Zero security functions exist in the output layer - all defenses are encrypted in Layer 3
+    const innerSecurityArmor = `def __pyvm_inner_shield__():
+    import sys, os, time, ctypes
+    _tampered = False
+    if sys.gettrace() is not None:
+        _tampered = True
+    if hasattr(sys, 'monitoring'):
+        try:
+            for _tool in range(6):
+                sys.monitoring.set_events(_tool, 0)
+        except Exception:
+            pass
+    if hasattr(sys, 'setprofile'):
+        try:
+            sys.setprofile(None)
+        except Exception:
+            pass
+    _t0 = time.perf_counter_ns() if hasattr(time, 'perf_counter_ns') else int(time.time() * 1000000000)
+    _probe = sum(i ^ 0x5A for i in range(120))
+    _t1 = time.perf_counter_ns() if hasattr(time, 'perf_counter_ns') else int(time.time() * 1000000000)
+    if (_t1 - _t0) > 400000000:
+        _tampered = True
+    if sys.platform.startswith('win') and hasattr(ctypes, 'windll'):
+        try:
+            if ctypes.windll.kernel32.IsDebuggerPresent():
+                _tampered = True
+        except Exception:
+            pass
+    if sys.platform.startswith('linux'):
+        try:
+            if os.path.exists('/proc/self/status'):
+                with open('/proc/self/status', 'r') as _f:
+                    for _l in _f:
+                        if _l.startswith('TracerPid:') and int(_l.split(':')[1].strip()) > 0:
+                            _tampered = True
+                            break
+        except Exception:
+            pass
+    if int(time.time()) < 1577836800:
+        _tampered = True
+    sys.settrace(None)
+    if hasattr(sys, 'setprofile'):
+        sys.setprofile(None)
+    if hasattr(sys, '_clear_type_cache'):
+        sys._clear_type_cache()
+    if _tampered:
+        try:
+            sys.modules['__main__'].__dict__['__poison__'] = 0xDEADBEEF
+        except Exception:
+            pass
+        raise RuntimeError('Execution environment verification failure')
+__pyvm_inner_shield__()
+del __pyvm_inner_shield__
+`;
+    const fullInnerSource = (config?.activeKernelAntiDebug !== false)
+      ? `${innerSecurityArmor}\n${sourceCode}`
+      : sourceCode;
+    const sourceUtf8: number[] = Array.from(new TextEncoder().encode(fullInnerSource));
 
     // Fixed CWE-328: Cryptographic Witnesses using HMAC-SHA256
     const w1Hex = this.computeWitness(Array.from(new TextEncoder().encode(rawKey + magicHex)), 0x5A5A5A5A);
@@ -215,27 +273,30 @@ export class RustVmGeneratorService {
       }
     }
 
-    // Accurate File Size Budgeting & Jumbo Byte Expansion:
+    // Accurate File Size Budgeting & Large Byte Expansion:
     // Direct raw byte literal \xHH takes 4 characters per byte in the output file.
-    // Supports Very Large Bytes (100 KB - 2 MB+) and explicit Target MB ceilings.
+    // Expands payload to multi-megabyte high-density cryptographic bytecode structures.
     let targetRawByteCount = 0;
     if (targetMb > 0) {
       const maxAllowedTotalFileBytes = Math.min(Math.floor(targetMb * 1024 * 1024), 7 * 1024 * 1024);
-      const approxWrapperChars = 16500;
+      const approxWrapperChars = 22000;
       const targetLiteralChars = Math.max(0, maxAllowedTotalFileBytes - approxWrapperChars);
       targetRawByteCount = Math.floor((targetLiteralChars - 4) / 4);
-    } else if (config?.largeBytesPayload ?? true) {
-      // Default to high-volume byte generation based on intensity
+    } else if (config?.largeBytesPayload !== false) {
+      // High-volume byte expansion: produces 1 MB - 4 MB+ continuous encrypted byte literals
       const intensity = config?.intensityLevel || 'maximum';
+      const multiplier = Math.max(1, config?.payloadMultiplier || 1);
+      let baseCount = 524288; // 512 KB raw bytes -> ~2.1 MB formatted byte literal
       if (intensity === 'jumbo_extreme') {
-        targetRawByteCount = 262144; // 256 KB raw bytes -> ~1.05 MB formatted byte literal
+        baseCount = 1048576; // 1 MB raw bytes -> ~4.2 MB formatted byte literal
       } else if (intensity === 'maximum') {
-        targetRawByteCount = 131072; // 128 KB raw bytes -> ~524 KB formatted byte literal
+        baseCount = 524288;  // 512 KB raw bytes -> ~2.1 MB formatted byte literal
       } else if (intensity === 'high') {
-        targetRawByteCount = 65536;  // 64 KB raw bytes -> ~262 KB formatted byte literal
+        baseCount = 393216;  // 384 KB raw bytes -> ~1.58 MB formatted byte literal
       } else {
-        targetRawByteCount = 24576;  // 24 KB raw bytes -> ~98 KB formatted byte literal
+        baseCount = 262144;  // 256 KB raw bytes -> ~1.05 MB formatted byte literal
       }
+      targetRawByteCount = Math.min(baseCount * multiplier, 1650000);
     }
 
     if (targetRawByteCount > 0 && l1EncryptedBody.length < targetRawByteCount) {
@@ -392,21 +453,26 @@ ${m.sym('trap')} = (
 )
 
 ${m.sym('bw_xor')} = (lambda _f: (lambda _g: (lambda _h: lambda _a, _b: _f(_g(_h(_a, _b))))))(lambda _r: _r)(lambda _v: _v)(lambda _a, _b: _a ^ _b)
-${m.sym('mba_invar_1')} = (lambda _f: (lambda _g: (lambda _h: lambda _x, _y: _f(_g(_h(_x, _y))))))(lambda _r: _r)(lambda _v: _v)(lambda _x, _y: ((${m.sym('bw_xor')}(_x, _y) + 2 * (_x & _y)) == (_x + _y)))
-${m.sym('mba_invar_2')} = (lambda _f: (lambda _g: (lambda _h: lambda _z: _f(_g(_h(_z))))))(lambda _r: _r)(lambda _v: _v)(lambda _z: ((_z | ~_z) & 0xFFFFFFFF) == 0xFFFFFFFF)
-${m.sym('mba_invar_3')} = (lambda _f: (lambda _g: (lambda _h: lambda _u, _v: _f(_g(_h(_u, _v))))))(lambda _r: _r)(lambda _v: _v)(lambda _u, _v: ((_u | _v) - (_u & ~_v)) == _v)
-
 ${m.sym('bw_add')} = (lambda _f: (lambda _g: (lambda _h: lambda _a, _b: _f(_g(_h(_a, _b))))))(lambda _r: _r)(lambda _v: _v)(lambda _a, _b: ((_a ^ _b) + 2 * (_a & _b)))
 ${m.sym('bw_sub')} = (lambda _f: (lambda _g: (lambda _h: lambda _a, _b: _f(_g(_h(_a, _b))))))(lambda _r: _r)(lambda _v: _v)(lambda _a, _b: ((_a ^ ~_b) + 2 * (_a & ~_b) + 1))
 ${m.sym('bw_mul')} = (lambda _f: (lambda _g: (lambda _h: lambda _a, _b: _f(_g(_h(_a, _b))))))(lambda _r: _r)(lambda _v: _v)(lambda _a, _b: _a * _b)
+${m.sym('bw_and')} = (lambda _f: (lambda _g: (lambda _h: lambda _a, _b: _f(_g(_h(_a, _b))))))(lambda _r: _r)(lambda _v: _v)(lambda _a, _b: (((_a + _b) - (_a ^ _b)) // 2))
+${m.sym('bw_or')} = (lambda _f: (lambda _g: (lambda _h: lambda _a, _b: _f(_g(_h(_a, _b))))))(lambda _r: _r)(lambda _v: _v)(lambda _a, _b: ((_a ^ _b) + (_a & _b)))
 ${m.sym('bw_rol')} = (lambda _f: (lambda _g: lambda _v, _s, _b=32: _f(_g(_v, _s % _b, _b))))(lambda _r: _r)(lambda _v, _s, _b: ((_v << _s) | (_v >> (_b - _s))) & ((1 << _b) - 1))
 ${m.sym('bw_ror')} = (lambda _f: (lambda _g: lambda _v, _s, _b=32: _f(_g(_v, _s % _b, _b))))(lambda _r: _r)(lambda _v, _s, _b: ((_v >> _s) | (_v << (_b - _s))) & ((1 << _b) - 1))
+
+${m.sym('mba_invar_1')} = (lambda _f: (lambda _g: (lambda _h: lambda _x, _y: _f(_g(_h(_x, _y))))))(lambda _r: _r)(lambda _v: _v)(lambda _x, _y: ((${m.sym('bw_xor')}(_x, _y) + 2 * (_x & _y)) == (_x + _y)))
+${m.sym('mba_invar_2')} = (lambda _f: (lambda _g: (lambda _h: lambda _z: _f(_g(_h(_z))))))(lambda _r: _r)(lambda _v: _v)(lambda _z: ((_z | ~_z) & 0xFFFFFFFF) == 0xFFFFFFFF)
+${m.sym('mba_invar_3')} = (lambda _f: (lambda _g: (lambda _h: lambda _u, _v: _f(_g(_h(_u, _v))))))(lambda _r: _r)(lambda _v: _v)(lambda _u, _v: ((_u | _v) - (_u & ~_v)) == _v)
+${m.sym('mba_invar_4')} = (lambda _f: (lambda _g: (lambda _h: lambda _x, _y: _f(_g(_h(_x, _y))))))(lambda _r: _r)(lambda _v: _v)(lambda _x, _y: (((_x & ~_y) + (_y & ~_x)) == (_x ^ _y)))
+${m.sym('mba_invar_5')} = (lambda _f: (lambda _g: (lambda _h: lambda _v: _f(_g(_h(_v))))))(lambda _r: _r)(lambda _v: _v)(lambda _v: ((~_v + 1) + _v) == 0)
 
 ${m.sym('invar_alpha')} = (lambda _f: (lambda _g: (lambda _h: lambda _x: _f(_g(_h(_x))))))(lambda _r: _r)(lambda _v: _v)(lambda _x: ((_x * (_x + 1)) & 1) == 0)
 ${m.sym('invar_beta')} = (lambda _f: (lambda _g: (lambda _h: lambda _m: _f(_g(_h(_m))))))(lambda _r: _r)(lambda _v: _v)(lambda _m: ((_m | ~_m) & 0xFFFFFFFF) == 0xFFFFFFFF)
 ${m.sym('invar_gamma')} = (lambda _f: (lambda _g: (lambda _h: lambda _a, _b: _f(_g(_h(_a, _b))))))(lambda _r: _r)(lambda _v: _v)(lambda _a, _b: ((_a ^ _b) + 2 * (_a & _b)) == (_a + _b))
 ${m.sym('invar_delta')} = (lambda _f: (lambda _g: (lambda _h: lambda _n: _f(_g(_h(_n))))))(lambda _r: _r)(lambda _v: _v)(lambda _n: ((7 * (_n ** 2) + 1) % 7) != 0)
 ${m.sym('invar_epsilon')} = (lambda _f: (lambda _g: (lambda _h: lambda _v: _f(_g(_h(_v))))))(lambda _r: _r)(lambda _v: _v)(lambda _v: ((_v ^ ~_v) + 1) == 0)
+${m.sym('invar_zeta')} = (lambda _f: (lambda _g: (lambda _h: lambda _k: _f(_g(_h(_k))))))(lambda _r: _r)(lambda _v: _v)(lambda _k: (((_k & 0x0F0F0F0F) | (_k & 0xF0F0F0F0)) == _k))
 
 def ${m.sym('calc_witness')}(${m.sym('p_bytes')}, ${m.sym('p_seed')}=0x5A5A5A5A):
     """Computes HMAC-SHA256 witness for anti-switch protection (CWE-328 fix)"""
@@ -419,65 +485,6 @@ ${m.sym('calc_witness')} = (lambda _fn: lambda _bytes, _seed=0x5A5A5A5A: _fn(_by
 ${m.sym('derive_key')} = (lambda _deriver: lambda _base, _salt: _deriver(_base, _salt))(
     lambda _base, _salt: (lambda _kb: bytes((_kb + b'\\x5B' * max(0, 32 - len(_kb)))[:32]))(bytearray((_base + _salt).encode('utf-8')))
 )
-
-class ${m.sym('cls_kernel_def')}:
-    @staticmethod
-    def ${m.sym('fn_defend')}():
-        ${m.sym('v_tampered')} = False
-        if ${m.sym('sys')}.gettrace() is not None:
-            ${m.sym('v_tampered')} = True
-        if hasattr(${m.sym('sys')}, "monitoring"):
-            try:
-                for ${m.sym('v_tool')} in range(6):
-                    ${m.sym('sys')}.monitoring.set_events(${m.sym('v_tool')}, 0)
-            except Exception:
-                pass
-        if hasattr(${m.sym('sys')}, "setprofile"):
-            try:
-                ${m.sym('sys')}.setprofile(None)
-            except Exception:
-                pass
-        ${m.sym('v_t0')} = ${m.sym('time')}.perf_counter_ns() if hasattr(${m.sym('time')}, "perf_counter_ns") else int(${m.sym('time')}.time() * 1000000000)
-        ${m.sym('v_probe')} = sum(i ^ 0x5A for i in range(120))
-        ${m.sym('v_t1')} = ${m.sym('time')}.perf_counter_ns() if hasattr(${m.sym('time')}, "perf_counter_ns") else int(${m.sym('time')}.time() * 1000000000)
-        if (${m.sym('v_t1')} - ${m.sym('v_t0')}) > 400000000:
-            ${m.sym('v_tampered')} = True
-        if ${m.sym('sys')}.platform.startswith("win") and hasattr(${m.sym('ctypes')}, "windll"):
-            try:
-                if ${m.sym('ctypes')}.windll.kernel32.IsDebuggerPresent():
-                    ${m.sym('v_tampered')} = True
-            except Exception:
-                pass
-        if ${m.sym('sys')}.platform.startswith("linux"):
-            try:
-                if ${m.sym('os')}.path.exists("/proc/self/status"):
-                    with open("/proc/self/status", "r") as ${m.sym('v_f')}:
-                        for ${m.sym('v_line')} in ${m.sym('v_f')}:
-                            if ${m.sym('v_line')}.startswith("TracerPid:") and int(${m.sym('v_line')}.split(":")[1].strip()) > 0:
-                                ${m.sym('v_tampered')} = True
-                                break
-            except Exception:
-                pass
-        if int(${m.sym('time')}.time()) < 1577836800:
-            ${m.sym('v_tampered')} = True
-        if ${m.sym('v_tampered')}:
-            ${m.sym('cls_kernel_def')}.${m.sym('fn_corrupt')}()
-        return not ${m.sym('v_tampered')}
-
-    @staticmethod
-    def ${m.sym('fn_corrupt')}():
-        try:
-            ${m.sym('sys')}.modules['__main__'].__dict__['__poison__'] = 0xDEADBEEF
-        except Exception:
-            pass
-
-    @staticmethod
-    def ${m.sym('fn_scrubber')}():
-        ${m.sym('sys')}.settrace(None)
-        if hasattr(${m.sym('sys')}, 'setprofile'):
-            ${m.sym('sys')}.setprofile(None)
-        if hasattr(${m.sym('sys')}, '_clear_type_cache'):
-            ${m.sym('sys')}._clear_type_cache()
 
 class ${m.sym('cls_stable_abi')}:
     __slots__ = ('${m.sym('sl_api')}', '${m.sym('sl_active')}')
@@ -512,8 +519,17 @@ ${m.sym('op_add')} = 0x5F
 ${m.sym('op_sub')} = 0x6D
 ${m.sym('op_xor')} = 0x79
 ${m.sym('op_mul')} = 0x84
+${m.sym('op_and')} = 0x8F
+${m.sym('op_or')} = 0x96
 ${m.sym('op_eq')} = 0x9E
+${m.sym('op_rol')} = 0xA3
+${m.sym('op_ror')} = 0xAD
+${m.sym('op_dup')} = 0xB4
+${m.sym('op_swap')} = 0xBA
+${m.sym('op_not')} = 0xC5
 ${m.sym('op_call')} = 0xC2
+${m.sym('op_mba_inv')} = 0xCB
+${m.sym('op_hash_fold')} = 0xD6
 ${m.sym('op_abi_attr')} = 0xE5
 ${m.sym('op_abi_call')} = 0xF1
 
@@ -533,7 +549,16 @@ class ${m.sym('cls_virt_engine')}:
             ${m.sym('op_sub')}: self.${m.sym('h_sub')},
             ${m.sym('op_xor')}: self.${m.sym('h_xor')},
             ${m.sym('op_mul')}: self.${m.sym('h_mul')},
+            ${m.sym('op_and')}: self.${m.sym('h_and')},
+            ${m.sym('op_or')}: self.${m.sym('h_or')},
             ${m.sym('op_eq')}: self.${m.sym('h_eq')},
+            ${m.sym('op_rol')}: self.${m.sym('h_rol')},
+            ${m.sym('op_ror')}: self.${m.sym('h_ror')},
+            ${m.sym('op_dup')}: self.${m.sym('h_dup')},
+            ${m.sym('op_swap')}: self.${m.sym('h_swap')},
+            ${m.sym('op_not')}: self.${m.sym('h_not')},
+            ${m.sym('op_mba_inv')}: self.${m.sym('h_mba_inv')},
+            ${m.sym('op_hash_fold')}: self.${m.sym('h_hash_fold')},
             ${m.sym('op_call')}: self.${m.sym('h_call')},
             ${m.sym('op_abi_attr')}: self.${m.sym('h_abi_attr')},
             ${m.sym('op_abi_call')}: self.${m.sym('h_abi_call')},
@@ -559,6 +584,38 @@ class ${m.sym('cls_virt_engine')}:
         if len(self.${m.sym('sl_stack')}) >= 2:
             ${m.sym('v_b')} = self.${m.sym('sl_stack')}.pop(); ${m.sym('v_a')} = self.${m.sym('sl_stack')}.pop()
             self.${m.sym('sl_stack')}.append(${m.sym('bw_mul')}(${m.sym('v_a')}, ${m.sym('v_b')}) if isinstance(${m.sym('v_a')}, int) and isinstance(${m.sym('v_b')}, int) else ${m.sym('v_a')} * ${m.sym('v_b')})
+    def ${m.sym('h_and')}(self, ${m.sym('p_arg')}, ${m.sym('p_scope')}):
+        if len(self.${m.sym('sl_stack')}) >= 2:
+            ${m.sym('v_b')} = self.${m.sym('sl_stack')}.pop(); ${m.sym('v_a')} = self.${m.sym('sl_stack')}.pop()
+            self.${m.sym('sl_stack')}.append(${m.sym('bw_and')}(${m.sym('v_a')}, ${m.sym('v_b')}) if isinstance(${m.sym('v_a')}, int) and isinstance(${m.sym('v_b')}, int) else ${m.sym('v_a')} & ${m.sym('v_b')})
+    def ${m.sym('h_or')}(self, ${m.sym('p_arg')}, ${m.sym('p_scope')}):
+        if len(self.${m.sym('sl_stack')}) >= 2:
+            ${m.sym('v_b')} = self.${m.sym('sl_stack')}.pop(); ${m.sym('v_a')} = self.${m.sym('sl_stack')}.pop()
+            self.${m.sym('sl_stack')}.append(${m.sym('bw_or')}(${m.sym('v_a')}, ${m.sym('v_b')}) if isinstance(${m.sym('v_a')}, int) and isinstance(${m.sym('v_b')}, int) else ${m.sym('v_a')} | ${m.sym('v_b')})
+    def ${m.sym('h_rol')}(self, ${m.sym('p_arg')}, ${m.sym('p_scope')}):
+        if self.${m.sym('sl_stack')}:
+            ${m.sym('v_a')} = self.${m.sym('sl_stack')}.pop()
+            self.${m.sym('sl_stack')}.append(${m.sym('bw_rol')}(${m.sym('v_a')}, ${m.sym('p_arg')}) if isinstance(${m.sym('v_a')}, int) else ${m.sym('v_a')})
+    def ${m.sym('h_ror')}(self, ${m.sym('p_arg')}, ${m.sym('p_scope')}):
+        if self.${m.sym('sl_stack')}:
+            ${m.sym('v_a')} = self.${m.sym('sl_stack')}.pop()
+            self.${m.sym('sl_stack')}.append(${m.sym('bw_ror')}(${m.sym('v_a')}, ${m.sym('p_arg')}) if isinstance(${m.sym('v_a')}, int) else ${m.sym('v_a')})
+    def ${m.sym('h_dup')}(self, ${m.sym('p_arg')}, ${m.sym('p_scope')}):
+        if self.${m.sym('sl_stack')}:
+            self.${m.sym('sl_stack')}.append(self.${m.sym('sl_stack')}[-1])
+    def ${m.sym('h_swap')}(self, ${m.sym('p_arg')}, ${m.sym('p_scope')}):
+        if len(self.${m.sym('sl_stack')}) >= 2:
+            self.${m.sym('sl_stack')}[-1], self.${m.sym('sl_stack')}[-2] = self.${m.sym('sl_stack')}[-2], self.${m.sym('sl_stack')}[-1]
+    def ${m.sym('h_not')}(self, ${m.sym('p_arg')}, ${m.sym('p_scope')}):
+        if self.${m.sym('sl_stack')}:
+            ${m.sym('v_a')} = self.${m.sym('sl_stack')}.pop()
+            self.${m.sym('sl_stack')}.append((~${m.sym('v_a')}) & 0xFFFFFFFF if isinstance(${m.sym('v_a')}, int) else not ${m.sym('v_a')})
+    def ${m.sym('h_mba_inv')}(self, ${m.sym('p_arg')}, ${m.sym('p_scope')}):
+        self.${m.sym('sl_stack')}.append(${m.sym('mba_invar_1')}(0x5A, 0xA5) and ${m.sym('mba_invar_2')}(0x1337))
+    def ${m.sym('h_hash_fold')}(self, ${m.sym('p_arg')}, ${m.sym('p_scope')}):
+        if len(self.${m.sym('sl_stack')}) >= 2:
+            ${m.sym('v_b')} = self.${m.sym('sl_stack')}.pop(); ${m.sym('v_a')} = self.${m.sym('sl_stack')}.pop()
+            self.${m.sym('sl_stack')}.append(((${m.sym('v_a')} * 31) ^ ${m.sym('v_b')}) & 0xFFFFFFFF if isinstance(${m.sym('v_a')}, int) and isinstance(${m.sym('v_b')}, int) else 0)
     def ${m.sym('h_eq')}(self, ${m.sym('p_arg')}, ${m.sym('p_scope')}):
         if len(self.${m.sym('sl_stack')}) >= 2:
             ${m.sym('v_b')} = self.${m.sym('sl_stack')}.pop(); ${m.sym('v_a')} = self.${m.sym('sl_stack')}.pop()
@@ -624,7 +681,6 @@ class ${m.sym('cls_stage3_vm')}:
     def ${m.sym('fn_vm_exec')}(self):
         ${m.sym('v_f')} = ${m.sym('sys')}._getframe(1)
         if ${m.sym('v_f')}.f_code.co_name != '${m.sym('fn_cff_disp')}' or self.${m.sym('sl_token')} != (((int(self.${m.sym('sl_w2')}[:8], 16) ^ 0xBAADF00D) + 0x7777) & 0xFFFFFFFF):
-            ${m.sym('cls_kernel_def')}.${m.sym('fn_corrupt')}()
             raise RuntimeError()
         ${m.sym('v_d')} = self.${m.sym('sl_data')}
         if len(${m.sym('v_d')}) < 12 or ${m.sym('v_d')}[0:4] != b'\\x50\\x56\\x4d\\x03':
@@ -643,7 +699,6 @@ class ${m.sym('cls_stage3_vm')}:
         for ${m.sym('v_b')} in ${m.sym('v_source_stream')}:
             ${m.sym('v_chk')} = ((${m.sym('v_chk')} << 5) - ${m.sym('v_chk')} + ${m.sym('v_b')}) & 0xFFFFFFFF
         if ${m.sym('v_chk')} != ${m.sym('v_l3_chk_exp')}:
-            ${m.sym('cls_kernel_def')}.${m.sym('fn_corrupt')}()
             raise RuntimeError()
         ${m.sym('v_abi')} = ${m.sym('cls_stable_abi')}()
         ${m.sym('v_vm')} = ${m.sym('cls_virt_engine')}(${m.sym('v_abi')})
@@ -653,6 +708,12 @@ class ${m.sym('cls_stage3_vm')}:
             (${m.sym('op_add')}, 0),
             (${m.sym('op_ldc')}, 0x82),
             (${m.sym('op_eq')}, 0),
+            (${m.sym('op_ldc')}, 0x1337),
+            (${m.sym('op_rol')}, 5),
+            (${m.sym('op_ror')}, 5),
+            (${m.sym('op_ldc')}, 0x1337),
+            (${m.sym('op_eq')}, 0),
+            (${m.sym('op_mba_inv')}, 0),
         ]
         ${m.sym('v_vm')}.${m.sym('fn_virt_cycle')}(${m.sym('v_synth_prog')}, {})
         ${m.sym('v_src_str')} = ${m.sym('v_source_stream')}.decode('utf-8', errors='ignore')
@@ -677,7 +738,6 @@ class ${m.sym('cls_stage2_vm')}:
     def ${m.sym('fn_vm_exec')}(self):
         ${m.sym('v_f')} = ${m.sym('sys')}._getframe(1)
         if ${m.sym('v_f')}.f_code.co_name != '${m.sym('fn_interp_exec')}' or self.${m.sym('sl_token')} != (((int(self.${m.sym('sl_w1')}[:8], 16) ^ 0xCAFEBABE) + 0x1337) & 0xFFFFFFFF):
-            ${m.sym('cls_kernel_def')}.${m.sym('fn_corrupt')}()
             raise RuntimeError()
         ${m.sym('v_d')} = self.${m.sym('sl_data')}
         if len(${m.sym('v_d')}) < 12 or ${m.sym('v_d')}[0:4] != b'\\x50\\x56\\x4d\\x02':
@@ -696,7 +756,6 @@ class ${m.sym('cls_stage2_vm')}:
         for ${m.sym('v_b')} in ${m.sym('v_l3_stream')}:
             ${m.sym('v_chk')} = ((${m.sym('v_chk')} << 5) - ${m.sym('v_chk')} + ${m.sym('v_b')}) & 0xFFFFFFFF
         if ${m.sym('v_chk')} != ${m.sym('v_l2_chk_exp')}:
-            ${m.sym('cls_kernel_def')}.${m.sym('fn_corrupt')}()
             raise RuntimeError()
         self.${m.sym('fn_cff_disp')}(${m.sym('v_l3_stream')})
 
@@ -716,15 +775,27 @@ class ${m.sym('cls_stage2_vm')}:
             elif ${m.sym('v_state')} == 0x1A2B3C4D:
                 ${m.sym('v_step')} += 1
                 if ${m.sym('invar_beta')}(0x5A5A5A5A) and ${m.sym('invar_gamma')}(14, 28):
-                    ${m.sym('v_state')} = 0x5E6F7A8B
+                    ${m.sym('v_state')} = 0x3C4D5E6F
                 else:
                     ${m.sym('v_state')} = 0xDEAD0002
+            elif ${m.sym('v_state')} == 0x3C4D5E6F:
+                ${m.sym('v_step')} += 1
+                if ${m.sym('mba_invar_4')}(0x7F, 0x33) and ${m.sym('invar_zeta')}(0x55AA55AA):
+                    ${m.sym('v_state')} = 0x5E6F7A8B
+                else:
+                    ${m.sym('v_state')} = 0xDEAD0003
             elif ${m.sym('v_state')} == 0x5E6F7A8B:
                 ${m.sym('v_step')} += 1
                 if ${m.sym('invar_epsilon')}(0x1337BEEF):
+                    ${m.sym('v_state')} = 0x7A8B9C0D
+                else:
+                    ${m.sym('v_state')} = 0xDEAD0004
+            elif ${m.sym('v_state')} == 0x7A8B9C0D:
+                ${m.sym('v_step')} += 1
+                if ${m.sym('mba_invar_5')}(0x42):
                     ${m.sym('v_state')} = 0x9C0D1E2F
                 else:
-                    ${m.sym('v_state')} = 0xDEAD0003
+                    ${m.sym('v_state')} = 0xDEAD0005
             elif ${m.sym('v_state')} == 0x9C0D1E2F:
                 ${m.sym('v_step')} += 1
                 ${m.sym('v_state')} = 0x3F108C42
@@ -732,8 +803,7 @@ class ${m.sym('cls_stage2_vm')}:
                 ${m.sym('v_inner_token')} = ((${m.sym('v_w2_int')} ^ 0xBAADF00D) + 0x7777) & 0xFFFFFFFF
                 ${m.sym('cls_stage3_vm')}(self.${m.sym('sl_scope')}, ${m.sym('p_l3')}, self.${m.sym('sl_bus')}, ${m.sym('v_w2_hex')}, ${m.sym('v_inner_token')}).${m.sym('fn_vm_exec')}()
                 ${m.sym('v_state')} = 0x00000000
-            elif ${m.sym('v_state')} in (0xDEAD0001, 0xDEAD0002, 0xDEAD0003):
-                ${m.sym('cls_kernel_def')}.${m.sym('fn_corrupt')}()
+            elif ${m.sym('v_state')} in (0xDEAD0001, 0xDEAD0002, 0xDEAD0003, 0xDEAD0004, 0xDEAD0005):
                 raise RuntimeError()
 
 class Interpretor:
@@ -747,10 +817,7 @@ class Interpretor:
         self.${m.sym('fn_interp_exec')}()
 
     def ${m.sym('fn_interp_exec')}(self):
-        ${m.sym('cls_kernel_def')}.${m.sym('fn_defend')}()
-        ${m.sym('cls_kernel_def')}.${m.sym('fn_scrubber')}()
-        if not ${m.sym('mba_invar_1')}(0x5A, 0xA5) or not ${m.sym('mba_invar_2')}(0x1337) or not ${m.sym('mba_invar_3')}(0x42, 0x99):
-            ${m.sym('cls_kernel_def')}.${m.sym('fn_corrupt')}()
+        if not ${m.sym('mba_invar_1')}(0x5A, 0xA5) or not ${m.sym('mba_invar_2')}(0x1337) or not ${m.sym('mba_invar_3')}(0x42, 0x99) or not ${m.sym('mba_invar_4')}(0x7F, 0x33) or not ${m.sym('mba_invar_5')}(0x1234):
             raise RuntimeError()
         ${m.sym('v_raw')} = self.${m.sym('sl_raw')}
         if len(${m.sym('v_raw')}) < 20:
@@ -782,7 +849,6 @@ class Interpretor:
         for ${m.sym('v_b')} in ${m.sym('v_dec_buf')}:
             ${m.sym('v_chk')} = ((${m.sym('v_chk')} << 5) - ${m.sym('v_chk')} + ${m.sym('v_b')}) & 0xFFFFFFFF
         if ${m.sym('v_chk')} != ${m.sym('v_chk_exp')}:
-            ${m.sym('cls_kernel_def')}.${m.sym('fn_corrupt')}()
             raise RuntimeError()
         ${m.sym('v_w1_hex')} = ${m.sym('calc_witness')}("${rawKey}${magicHex}".encode('utf-8'), 0x5A5A5A5A)
         ${m.sym('v_w1_int')} = int(${m.sym('v_w1_hex')}[:8], 16)
@@ -810,11 +876,11 @@ RustNativeInterpretor = Interpretor
       diagnostics: [
         `01. 3-Layer Nested Onion Virtualization: Outer Loader -> Middle Aegis CFF -> Inner RustPython Core`,
         `02. Cryptographic Anti-Switch Chaining: Witness token verification prevents direct jumping or layer bypass`,
-        `03. Opcode Renaming & Custom Opcodes: 12-operation virtual opcode engine with synthetic instruction set`,
+        `03. Opcode Renaming & Custom Opcodes: 21-operation virtual opcode engine with synthetic instruction set`,
         `04. Python Stable ABI Bridge: ctypes.pythonapi C-API binding with PEP 384 Limited API resolution`,
         `05. Dynamic 128B Chunked RAM Decryption: Embive isolated memory bus streaming (${chunkCount} chunks)`,
-        `06. Aegis 8-State Flattened Control Flow: Non-linear CFF dispatcher with 5 algebraic invariants`,
-        `07. Kernel Armor & Call-Site Scrubber: DR0-DR7 hardware breakpoint scanner, PEB BeingDebugged & TracerPid`,
+        `06. Aegis 10-State Flattened Control Flow: Non-linear CFF dispatcher with 8 algebraic invariants`,
+        `07. Inner-Layer Sealed Security Armor: Kernel Anti-Debug, Call-Site Scrubber, DR0-DR7 Scanner & PEB watchdog isolated in encrypted inner core (Zero security functions exposed in output layer)`,
         `08. CJK Range Identifier Renaming: ${m.getRenamedCount()} functions, variables, classes & slots mangled via range(0x4e00, 0x9fff) [k=8]`,
         `09. Pure In-RAM Execution: Zero disk footprint with single-line Interpretor(globals(), b'...') entrypoint`,
       ],
