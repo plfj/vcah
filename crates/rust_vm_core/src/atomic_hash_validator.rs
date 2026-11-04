@@ -12,7 +12,7 @@ pub const SECRET_HASH: &str = "e8c8f5b5e5c5f5b5e5c5f5b5e5c5f5b5e5c5f5b5e5c5f5b5e
 pub fn compute_sha512(input: &[u8]) -> String {
     let mut hasher = Sha512::new();
     hasher.update(input);
-    format!("{:x}", hasher.finalize())
+    hex::encode(hasher.finalize())
 }
 
 /// Validates secret hash against ATOMIC_PYVM constant
