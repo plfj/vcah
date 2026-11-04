@@ -40,6 +40,7 @@
     "vite": "^8.3.5"
   },
   "overrides": {
-    "multer": "^2.4.0"
+    "multer": "^2.5.0",
+    "postcss-selector-parser": "^7.1.6"
   }
 }
