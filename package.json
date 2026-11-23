@@ -20,7 +20,7 @@
     "@nestjs/platform-express": "^11.2.3",
     "@types/express": "^5.0.6",
     "@types/node": "^26.6.4",
-    "autoprefixer": "^10.6.1",
+    "autoprefixer": "^10.7.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
     "jszip": "^3.10.2",
